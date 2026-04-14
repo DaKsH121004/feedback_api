@@ -22,7 +22,6 @@ public class CourseController {
     }
 
     @GetMapping()
-    @PreAuthorize("hasAuthority('SUPERADMIN')")
     public ResponseEntity<Response> getAllCourses(
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "10") int size,

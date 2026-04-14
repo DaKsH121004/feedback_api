@@ -22,7 +22,6 @@ public class DepartmentController {
     }
 
     @GetMapping()
-    @PreAuthorize("hasAuthority('SUPERADMIN')")
     public ResponseEntity<Response> getAllDepartments(){
         return new ResponseEntity<>(departmentService.getAllDepartments(), HttpStatus.OK);
     }

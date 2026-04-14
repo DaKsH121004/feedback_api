@@ -22,7 +22,6 @@ public class SchoolController {
     }
 
     @GetMapping()
-    @PreAuthorize("hasAuthority('SUPERADMIN')")
     public ResponseEntity<Response> getAllSchools() {
         return new ResponseEntity<>(schoolService.getAllSchools(), HttpStatus.OK);
     }

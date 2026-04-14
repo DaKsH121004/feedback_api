@@ -22,7 +22,6 @@ public class FacultyController {
     }
 
     @GetMapping()
-    @PreAuthorize("hasAuthority('SUPERADMIN')")
     public ResponseEntity<Response> getAllFaculties() {
         return new ResponseEntity<>(facultyService.getAllFaculties(), HttpStatus.OK);
     }
