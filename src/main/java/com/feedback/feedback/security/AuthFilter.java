@@ -37,6 +37,11 @@ public class AuthFilter extends OncePerRequestFilter {
             return;
         }
 
+        if (path.equals("/api/v1/feedback/add")) {
+        filterChain.doFilter(request, response);
+        return;
+    }
+
         try {
             String token = getTokenFromRequest(request);
 
