@@ -9,16 +9,16 @@ import lombok.*;
 @Builder
 public class FeedbackRequest {
 
-    @NotBlank(message = "Student name is required")
-    @Size(min = 2, max = 100, message = "Student name must be between 2-100 characters")
-    private String studentName;
+    // @NotBlank(message = "Student name is required")
+    // @Size(min = 2, max = 100, message = "Student name must be between 2-100 characters")
+    // private String studentName;
 
-    @NotBlank(message = "Roll number is required")
-    private String studentRollNo;
+    // @NotBlank(message = "Roll number is required")
+    // private String studentRollNo;
 
-    @NotBlank(message = "Email is required")
-    @Email(message = "Invalid email format")
-    private String studentEmail;
+    // @NotBlank(message = "Email is required")
+    // @Email(message = "Invalid email format")
+    // private String studentEmail;
 
     @NotNull(message = "School ID is required")
     private Long schoolId;

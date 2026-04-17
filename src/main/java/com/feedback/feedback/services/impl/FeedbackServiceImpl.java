@@ -122,21 +122,21 @@ public class FeedbackServiceImpl implements FeedbackService {
             throw new RuntimeException("Faculty does not teach this course");
         }
 
-        boolean alreadySubmitted = feedbackRepository
-                .existsByStudentRollNoAndFacultyIdAndCourseId(
-                        feedbackRequest.getStudentRollNo(),
-                        faculty.getId(),
-                        course.getId()
-                );
+        // boolean alreadySubmitted = feedbackRepository
+        //         .existsByStudentRollNoAndFacultyIdAndCourseId(
+        //                 feedbackRequest.getStudentRollNo(),
+        //                 faculty.getId(),
+        //                 course.getId()
+        //         );
 
-        if (alreadySubmitted) {
-            throw new AlreadyExistException("You have already submitted feedback for this faculty and course");
-        }
+        // if (alreadySubmitted) {
+        //     throw new AlreadyExistException("You have already submitted feedback for this faculty and course");
+        // }
 
         Feedback feedback = Feedback.builder()
-                .studentName(feedbackRequest.getStudentName())
-                .studentEmail(feedbackRequest.getStudentEmail())
-                .studentRollNo(feedbackRequest.getStudentRollNo())
+                // .studentName(feedbackRequest.getStudentName())
+                // .studentEmail(feedbackRequest.getStudentEmail())
+                // .studentRollNo(feedbackRequest.getStudentRollNo())
                 .school(school)
                 .department(department)
                 .semester(feedbackRequest.getSemester())

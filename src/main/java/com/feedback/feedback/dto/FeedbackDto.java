@@ -23,9 +23,9 @@ import java.time.LocalDateTime;
 @Builder
 public class FeedbackDto {
     private Long id;
-    private String studentName;
-    private String studentRollNo;
-    private String studentEmail;
+    // private String studentName;
+    // private String studentRollNo;
+    // private String studentEmail;
     private School school;
     private Department department;
 
