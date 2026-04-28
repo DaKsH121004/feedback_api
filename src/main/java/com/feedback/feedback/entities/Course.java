@@ -20,12 +20,5 @@ public class Course {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
     private String courseName;
-    @ManyToMany(fetch = FetchType.LAZY)
-    @JoinTable(
-            name = "course_faculty",
-            joinColumns = @JoinColumn(name = "course_id"),
-            inverseJoinColumns = @JoinColumn(name = "faculty_id")
-    )
-    private List<Faculty> faculties;
     private LocalDateTime createdAt;
 }

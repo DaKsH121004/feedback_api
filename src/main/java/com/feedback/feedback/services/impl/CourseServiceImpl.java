@@ -37,19 +37,8 @@ public class CourseServiceImpl implements CourseService {
             throw new AlreadyExistException("Course Already Exist");
         }
 
-        if (courseRequest.getFacultiesId() == null || courseRequest.getFacultiesId().isEmpty()) {
-            throw new RuntimeException("Faculty list cannot be empty");
-        }
-
-        List<Faculty> faculties = facultyRepository.findAllById(courseRequest.getFacultiesId());
-
-        if(faculties.size() != courseRequest.getFacultiesId().size()){
-            throw new RuntimeException("Some faculty is invalid");
-        }
-
         Course course = Course.builder()
                 .courseName(courseRequest.getCourseName())
-                .faculties(faculties)
                 .createdAt(LocalDateTime.now())
                 .build();
 

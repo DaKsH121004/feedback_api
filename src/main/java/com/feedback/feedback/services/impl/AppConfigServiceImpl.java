@@ -10,7 +10,6 @@ import lombok.extern.slf4j.Slf4j;
 import org.modelmapper.ModelMapper;
 import org.springframework.stereotype.Service;
 
-import java.time.LocalDateTime;
 import java.time.OffsetDateTime;
 import java.util.UUID;
 
@@ -36,27 +35,6 @@ public class AppConfigServiceImpl implements AppConfigService {
                 now.isBefore(config.getEndTime());
     }
 
-//    @Override
-//    public Response scheduleForm(OffsetDateTime end) {
-//        if (end.isBefore(OffsetDateTime.now())) {
-//            throw new RuntimeException("End time must be in the future");
-//        }
-//
-//        AppConfig config = appConfigRepository.findById(1L)
-//                .orElse(AppConfig.builder().id(1L).build());
-//
-//        config.setFeedbackEnabled(true);
-//        config.setStartTime(OffsetDateTime.now()); // ✅ FIXED
-//        config.setEndTime(end);
-//
-//        appConfigRepository.save(config);
-//
-//        return Response.builder()
-//                .status(201)
-//                .message("Successfully scheduled feedback form")
-//                .build();
-//    }
-
     @Override
     public Response scheduleForm(OffsetDateTime end) {
 
@@ -67,12 +45,12 @@ public class AppConfigServiceImpl implements AppConfigService {
         AppConfig config = appConfigRepository.findById(1L)
                 .orElse(AppConfig.builder().id(1L).build());
 
-        String token = UUID.randomUUID().toString(); // ✅ generate unique link
+        String token = UUID.randomUUID().toString();
 
         config.setFeedbackEnabled(true);
         config.setStartTime(OffsetDateTime.now());
         config.setEndTime(end);
-        config.setFormToken(token); // ✅ store token
+        config.setFormToken(token);
 
         appConfigRepository.save(config);
 
@@ -84,18 +62,6 @@ public class AppConfigServiceImpl implements AppConfigService {
                 .url(formUrl) // ✅ return URL
                 .build();
     }
-
-//    @Override
-//    public Response getFormStatus() {
-//        AppConfig appConfig = appConfigRepository.findById(1L).orElseThrow(() -> new RuntimeException("Config not found"));
-//        FeedbackFormDto feedbackFormDto = modelMapper.map(appConfig, FeedbackFormDto.class);
-//
-//        return Response.builder()
-//                .status(200)
-//                .message("Successfully scheduled feedback form")
-//                .data(feedbackFormDto)
-//                .build();
-//    }
 
 
 
@@ -110,7 +76,7 @@ public class AppConfigServiceImpl implements AppConfigService {
         String formUrl = null;
 
         if (isFormActive()) {
-            formUrl = "https://final-feedback-ui.vercel.app/create-form/" + config.getFormToken();
+            formUrl = "http://localhost:3000/create-form/" + config.getFormToken();
         }
 
         return Response.builder()

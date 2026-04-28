@@ -50,4 +50,6 @@ public class Response {
 
     private String url;
 
+    private List<AssignmentDto> assignments;
+
 }

@@ -15,9 +15,7 @@ import java.util.List;
 public class CourseDto {
     private Long id;
     private String courseName;
-    private List<Faculty> faculties;
+   
 
-    private int currentPage;
-    private int totalPages;
-    private long totalElements;
+   
 }

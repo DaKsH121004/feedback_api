@@ -32,6 +32,7 @@ public class FeedbackServiceImpl implements FeedbackService {
     private final DepartmentRepository departmentRepository;
     private final CourseRepository courseRepository;
     private final FacultyRepository facultyRepository;
+    private final FacultyCourseAssignmentRepository assignmentRepository;
     private final ModelMapper modelMapper;
 
 
@@ -101,6 +102,15 @@ public class FeedbackServiceImpl implements FeedbackService {
     @Override
     public Response createFeedback(FeedbackRequest feedbackRequest) {
 
+        if (feedbackRequest.getQ1() < 1 || feedbackRequest.getQ1() > 5 ||
+                feedbackRequest.getQ2() < 1 || feedbackRequest.getQ2() > 5 ||
+                feedbackRequest.getQ3() < 1 || feedbackRequest.getQ3() > 5 ||
+                feedbackRequest.getQ4() < 1 || feedbackRequest.getQ4() > 5 ||
+                feedbackRequest.getQ5() < 1 || feedbackRequest.getQ5() > 5) {
+
+            throw new RuntimeException("Ratings must be between 1 and 5");
+        }
+
         School school = schoolRepository.findById(feedbackRequest.getSchoolId())
                 .orElseThrow(() -> new NotFoundException("School not found"));
 
@@ -117,26 +127,40 @@ public class FeedbackServiceImpl implements FeedbackService {
             throw new RuntimeException("Department does not belong to selected school");
         }
 
-        if (course.getFaculties() == null ||
-                course.getFaculties().stream().noneMatch(f -> f.getId().equals(faculty.getId()))) {
-            throw new RuntimeException("Faculty does not teach this course");
+        boolean belongs = faculty.getDepartments()
+                .stream()
+                .anyMatch(d -> d.getId().equals(department.getId()));
+
+        if (!belongs) {
+            throw new RuntimeException("Faculty does not belong to this department");
         }
 
-        // boolean alreadySubmitted = feedbackRepository
-        //         .existsByStudentRollNoAndFacultyIdAndCourseId(
-        //                 feedbackRequest.getStudentRollNo(),
-        //                 faculty.getId(),
-        //                 course.getId()
-        //         );
+        boolean validAssignment = assignmentRepository
+                .existsByFacultyIdAndDepartmentIdAndCourseId(
+                        faculty.getId(),
+                        department.getId(),
+                        course.getId()
+                );
 
-        // if (alreadySubmitted) {
-        //     throw new AlreadyExistException("You have already submitted feedback for this faculty and course");
-        // }
+        if (!validAssignment) {
+            throw new RuntimeException("Invalid selection: Faculty does not teach this course in this department");
+        }
+
+//        boolean alreadySubmitted = feedbackRepository
+//                .existsByStudentRollNoAndFacultyIdAndCourseId(
+//                        feedbackRequest.getStudentRollNo(),
+//                        faculty.getId(),
+//                        course.getId()
+//                );
+
+//        if (alreadySubmitted) {
+//            throw new AlreadyExistException("You have already submitted feedback for this faculty and course");
+//        }
 
         Feedback feedback = Feedback.builder()
-                // .studentName(feedbackRequest.getStudentName())
-                // .studentEmail(feedbackRequest.getStudentEmail())
-                // .studentRollNo(feedbackRequest.getStudentRollNo())
+//                .studentName(feedbackRequest.getStudentName())
+//                .studentEmail(feedbackRequest.getStudentEmail())
+//                .studentRollNo(feedbackRequest.getStudentRollNo())
                 .school(school)
                 .department(department)
                 .semester(feedbackRequest.getSemester())
