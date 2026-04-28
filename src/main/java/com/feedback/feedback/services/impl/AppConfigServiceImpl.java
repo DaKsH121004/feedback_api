@@ -76,7 +76,7 @@ public class AppConfigServiceImpl implements AppConfigService {
         String formUrl = null;
 
         if (isFormActive()) {
-            formUrl = "http://localhost:3000/create-form/" + config.getFormToken();
+            formUrl = "https://final-feedback-ui.vercel.app/create-form/" + config.getFormToken();
         }
 
         return Response.builder()
