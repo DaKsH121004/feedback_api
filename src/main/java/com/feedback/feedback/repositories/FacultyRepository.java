@@ -11,5 +11,5 @@ public interface FacultyRepository extends JpaRepository<Faculty, Long> {
     Optional<Faculty> findByFacultyCode(String facultyCode);
     Optional<Faculty> findByFacultyPhoneAndFacultyEmail(String facultyPhone, String facultyEmail);
     Optional<Faculty> findByFacultyName(String name);
-    List<Faculty> findTop3ByAverageRatingIsNotNullOrderByAverageRatingDesc();
+    List<Faculty> findTop10ByAverageRatingIsNotNullOrderByAverageRatingDesc();
 }

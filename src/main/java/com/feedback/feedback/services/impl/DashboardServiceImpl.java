@@ -61,7 +61,7 @@ public class DashboardServiceImpl implements Dashboard {
     private List<FacultyDto> getTopThreeFacultyMember() {
 
         List<Faculty> topFaculties = facultyRepository
-                .findTop3ByAverageRatingIsNotNullOrderByAverageRatingDesc();
+                .findTop10ByAverageRatingIsNotNullOrderByAverageRatingDesc();
 
         List<FacultyDto> facultyDtos = topFaculties.stream().map(faculty ->
                 FacultyDto.builder()
