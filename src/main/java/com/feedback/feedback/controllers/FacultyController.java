@@ -31,4 +31,18 @@ public class FacultyController {
     public ResponseEntity<Response> getFacultyById(@PathVariable Long id) {
         return new ResponseEntity<>(facultyService.getFacultyById(id), HttpStatus.OK);
     }
+
+    @PutMapping("/update/{id}")
+    public ResponseEntity<Response> updateFacultyById(
+            @PathVariable Long id,
+            @RequestBody FacultyRequest facultyRequest
+    ) {
+        return new ResponseEntity<>(facultyService.updateFacultyById(id, facultyRequest), HttpStatus.CREATED);
+    }
+
+    // Delete Faculty
+    @DeleteMapping("/delete/{id}")
+    public ResponseEntity<Response> deleteFacultyById(@PathVariable Long id) {
+        return new ResponseEntity<>(facultyService.deleteFacultyById(id), HttpStatus.OK);
+    }
 }

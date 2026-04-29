@@ -84,4 +84,64 @@ public class FacultyServiceImpl implements FacultyService {
                 .faculty(facultyDto)
                 .build();
     }
+
+    @Override
+    public Response updateFacultyById(Long id, FacultyRequest facultyRequest) {
+
+        Faculty faculty = facultyRepository.findById(id)
+                .orElseThrow(() -> new NotFoundException("Faculty Not Found"));
+
+        // Check faculty code duplicate (except current faculty)
+        facultyRepository.findByFacultyCode(facultyRequest.getFacultyCode())
+                .ifPresent(existingFaculty -> {
+                    if (!existingFaculty.getId().equals(id)) {
+                        throw new AlreadyExistException("Faculty code already exists");
+                    }
+                });
+
+        // Check phone + email duplicate (except current faculty)
+        facultyRepository.findByFacultyPhoneAndFacultyEmail(
+                facultyRequest.getFacultyPhone(),
+                facultyRequest.getFacultyEmail()
+        ).ifPresent(existingFaculty -> {
+            if (!existingFaculty.getId().equals(id)) {
+                throw new AlreadyExistException("Faculty already exists");
+            }
+        });
+
+        List<Department> departments = departmentRepository
+                .findAllById(facultyRequest.getDepartmentId());
+
+        if (departments.isEmpty()) {
+            throw new NotFoundException("Department not found");
+        }
+
+        faculty.setFacultyName(facultyRequest.getFacultyName());
+        faculty.setFacultyCode(facultyRequest.getFacultyCode());
+        faculty.setFacultyPhone(facultyRequest.getFacultyPhone());
+        faculty.setFacultyEmail(facultyRequest.getFacultyEmail());
+        faculty.setDepartments(departments);
+
+        facultyRepository.save(faculty);
+
+        return Response.builder()
+                .status(200)
+                .message("Faculty updated successfully")
+                .build();
+    }
+
+    @Override
+    public Response deleteFacultyById(Long id) {
+
+        Faculty faculty = facultyRepository.findById(id)
+                .orElseThrow(() -> new NotFoundException("Faculty Not Found"));
+
+        facultyRepository.delete(faculty);
+
+        return Response.builder()
+                .status(200)
+                .message("Faculty deleted successfully")
+                .build();
+    }
+
 }
