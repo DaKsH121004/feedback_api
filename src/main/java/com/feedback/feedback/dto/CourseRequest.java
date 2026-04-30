@@ -17,4 +17,5 @@ import java.util.List;
 @Builder
 public class CourseRequest {
     private String courseName;
+    private Long departmentId;
 }

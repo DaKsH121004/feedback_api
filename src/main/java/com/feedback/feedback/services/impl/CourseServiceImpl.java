@@ -33,6 +33,7 @@ import java.util.List;
 public class CourseServiceImpl implements CourseService {
     private final CourseRepository courseRepository;
     private final FacultyRepository facultyRepository;
+    private final com.feedback.feedback.repositories.DepartmentRepository departmentRepository;
     private final ModelMapper modelMapper;
 
     @Override
@@ -41,12 +42,17 @@ public class CourseServiceImpl implements CourseService {
             throw new AlreadyExistException("Course Already Exist");
         }
 
-        Course course = Course.builder()
+        Course.CourseBuilder courseBuilder = Course.builder()
                 .courseName(courseRequest.getCourseName())
-                .createdAt(LocalDateTime.now())
-                .build();
+                .createdAt(LocalDateTime.now());
 
-        courseRepository.save(course);
+        if (courseRequest.getDepartmentId() != null) {
+            com.feedback.feedback.entities.Department department = departmentRepository.findById(courseRequest.getDepartmentId())
+                    .orElseThrow(() -> new NotFoundException("Department Not Found"));
+            courseBuilder.department(department);
+        }
+
+        courseRepository.save(courseBuilder.build());
 
         return Response.builder()
                 .status(200)
@@ -159,6 +165,32 @@ public class CourseServiceImpl implements CourseService {
             log.error("Error processing bulk upload", e);
             return Response.builder().status(500).message("Error processing file: " + e.getMessage()).build();
         }
+    }
+
+    @Override
+    public Response updateCourse(Long id, CourseRequest courseRequest) {
+        Course course = courseRepository.findById(id).orElseThrow(
+                () -> new NotFoundException("Course Not Found")
+        );
+        course.setCourseName(courseRequest.getCourseName());
+        
+        if (courseRequest.getDepartmentId() != null) {
+            com.feedback.feedback.entities.Department department = departmentRepository.findById(courseRequest.getDepartmentId())
+                    .orElseThrow(() -> new NotFoundException("Department Not Found"));
+            course.setDepartment(department);
+        }
+        
+        courseRepository.save(course);
+        return Response.builder().status(200).message("Course Updated successfully").build();
+    }
+
+    @Override
+    public Response deleteCourse(Long id) {
+        if (!courseRepository.existsById(id)) {
+            throw new NotFoundException("Course Not Found");
+        }
+        courseRepository.deleteById(id);
+        return Response.builder().status(200).message("Course Deleted successfully").build();
     }
 
     private String getCellValue(Cell cell) {

@@ -21,4 +21,8 @@ public class Course {
     private Long id;
     private String courseName;
     private LocalDateTime createdAt;
+
+    @ManyToOne(fetch = FetchType.EAGER)
+    @JoinColumn(name = "department_id")
+    private Department department;
 }

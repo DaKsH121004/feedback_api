@@ -9,4 +9,6 @@ public interface CourseService {
     Response createCourse(CourseRequest courseRequest);
     Response getAllCourses(int page, int size, String search);
     Response getCourseById(Long id);
+    Response updateCourse(Long id, CourseRequest courseRequest);
+    Response deleteCourse(Long id);
 }

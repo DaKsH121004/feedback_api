@@ -42,4 +42,15 @@ public class CourseController {
         return new ResponseEntity<>(courseService.processBulkUpload(file), HttpStatus.OK);
     }
 
+    @PutMapping("/{id}")
+    @PreAuthorize("hasAuthority('SUPERADMIN')")
+    public ResponseEntity<Response> updateCourse(@PathVariable Long id, @RequestBody CourseRequest courseRequest) {
+        return new ResponseEntity<>(courseService.updateCourse(id, courseRequest), HttpStatus.OK);
+    }
+
+    @DeleteMapping("/{id}")
+    @PreAuthorize("hasAuthority('SUPERADMIN')")
+    public ResponseEntity<Response> deleteCourse(@PathVariable Long id) {
+        return new ResponseEntity<>(courseService.deleteCourse(id), HttpStatus.OK);
+    }
 }
