@@ -53,6 +53,7 @@ public class Response {
     private List<ChartDataDto> departmentPerformance;
     private List<ChartDataDto> ratingTrend;
     private List<ChartDataDto> feedbackVolume;
+    private List<DepartmentChampionDto> departmentChampions;
 
     private String url;
 

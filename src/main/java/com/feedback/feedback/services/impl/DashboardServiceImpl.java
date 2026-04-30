@@ -1,6 +1,7 @@
 package com.feedback.feedback.services.impl;
 
 import com.feedback.feedback.dto.FacultyDto;
+import com.feedback.feedback.dto.DepartmentChampionDto;
 import com.feedback.feedback.dto.Response;
 import com.feedback.feedback.entities.Faculty;
 import com.feedback.feedback.repositories.FacultyRepository;
@@ -13,6 +14,9 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
+import java.util.ArrayList;
+
+import org.springframework.transaction.annotation.Transactional;
 
 @Service
 @Slf4j
@@ -24,6 +28,7 @@ public class DashboardServiceImpl implements Dashboard {
     private final DepartmentRepository departmentRepository;
 
     @Override
+    @Transactional(readOnly = true)
     public Response getDashboard() {
 
         return Response.builder()
@@ -44,6 +49,7 @@ public class DashboardServiceImpl implements Dashboard {
                 .ratingTrend(feedbackRepository.findMonthlyRatingTrend().stream()
                         .map(p -> new com.feedback.feedback.dto.ChartDataDto(p.getLabel(), p.getValue()))
                         .toList())
+                .departmentChampions(getDepartmentChampions())
                 .build();
     }
 
@@ -70,6 +76,31 @@ public class DashboardServiceImpl implements Dashboard {
         ).toList();
 
         return facultyDtos;
+    }
+
+    private List<DepartmentChampionDto> getDepartmentChampions() {
+        List<DepartmentChampionDto> champions = new ArrayList<>();
+        List<com.feedback.feedback.entities.Department> departments = departmentRepository.findAll();
+        List<Faculty> faculties = facultyRepository.findAll();
+
+        for (com.feedback.feedback.entities.Department dept : departments) {
+            Faculty bestFaculty = null;
+            for (Faculty f : faculties) {
+                if (f.getDepartments() != null && f.getDepartments().stream().anyMatch(d -> d.getId().equals(dept.getId()))) {
+                    if (bestFaculty == null || (f.getAverageRating() != null && f.getAverageRating() > (bestFaculty.getAverageRating() != null ? bestFaculty.getAverageRating() : 0))) {
+                        bestFaculty = f;
+                    }
+                }
+            }
+            if (bestFaculty != null) {
+                champions.add(DepartmentChampionDto.builder()
+                        .departmentName(dept.getDepartmentName())
+                        .facultyName(bestFaculty.getFacultyName())
+                        .averageRating(bestFaculty.getAverageRating())
+                        .build());
+            }
+        }
+        return champions;
     }
 
 }
