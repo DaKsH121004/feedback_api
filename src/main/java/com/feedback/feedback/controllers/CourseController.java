@@ -8,6 +8,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
 @RestController
 @RequestMapping("/api/v1/course")
@@ -33,6 +34,12 @@ public class CourseController {
     @PreAuthorize("hasAuthority('SUPERADMIN')")
     public ResponseEntity<Response> getCourseById(@PathVariable Long id) {
         return new ResponseEntity<>(courseService.getCourseById(id), HttpStatus.OK);
+    }
+
+    @PostMapping("/bulk-upload")
+    @PreAuthorize("hasAuthority('SUPERADMIN')")
+    public ResponseEntity<Response> bulkUploadCourses(@RequestParam("file") MultipartFile file) {
+        return new ResponseEntity<>(courseService.processBulkUpload(file), HttpStatus.OK);
     }
 
 }

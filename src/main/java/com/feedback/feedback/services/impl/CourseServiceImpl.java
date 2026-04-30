@@ -19,6 +19,10 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
+import org.springframework.web.multipart.MultipartFile;
+import org.apache.poi.ss.usermodel.*;
+import org.apache.poi.xssf.usermodel.XSSFWorkbook;
+import java.io.InputStream;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -89,5 +93,78 @@ public class CourseServiceImpl implements CourseService {
                 .message("success")
                 .course(courseDto)
                 .build();
+    }
+
+    @Override
+    public Response processBulkUpload(MultipartFile file) {
+        try (InputStream is = file.getInputStream(); Workbook workbook = new XSSFWorkbook(is)) {
+            Sheet sheet = workbook.getSheetAt(0);
+            Row headerRow = sheet.getRow(0);
+
+            int courseNameIdx = -1;
+
+            for (Cell cell : headerRow) {
+                String header = cell.getStringCellValue().trim();
+                if (header.equalsIgnoreCase("Course Name")) courseNameIdx = cell.getColumnIndex();
+            }
+
+            if (courseNameIdx == -1) {
+                return Response.builder().status(400).message("Invalid Excel template. Required column: Course Name").build();
+            }
+
+            int successCount = 0;
+            java.util.List<String> skippedCourses = new java.util.ArrayList<>();
+            java.util.List<String> addedCourses = new java.util.ArrayList<>();
+
+            for (int i = 1; i <= sheet.getLastRowNum(); i++) {
+                Row row = sheet.getRow(i);
+                if (row == null) continue;
+
+                String courseName = getCellValue(row.getCell(courseNameIdx));
+
+                if (courseName.isEmpty()) continue;
+
+                if (courseRepository.findByCourseNameIgnoreCase(courseName).isPresent()) {
+                    skippedCourses.add(courseName);
+                    continue;
+                }
+
+                Course course = Course.builder()
+                        .courseName(courseName)
+                        .createdAt(LocalDateTime.now())
+                        .build();
+
+                courseRepository.save(course);
+                addedCourses.add(courseName);
+                successCount++;
+            }
+
+            StringBuilder finalMessage = new StringBuilder();
+            finalMessage.append("Bulk upload processed: ")
+                    .append(successCount).append(" created, ")
+                    .append(skippedCourses.size()).append(" already existed. ");
+
+            if (!skippedCourses.isEmpty()) {
+                finalMessage.append("Skipped (already exist): [").append(String.join(", ", skippedCourses)).append("]. ");
+            }
+            if (!addedCourses.isEmpty()) {
+                finalMessage.append("Added courses: [").append(String.join(", ", addedCourses)).append("].");
+            }
+
+            return Response.builder()
+                    .status(200)
+                    .message(finalMessage.toString())
+                    .build();
+        } catch (Exception e) {
+            log.error("Error processing bulk upload", e);
+            return Response.builder().status(500).message("Error processing file: " + e.getMessage()).build();
+        }
+    }
+
+    private String getCellValue(Cell cell) {
+        if (cell == null) return "";
+        if (cell.getCellType() == CellType.STRING) return cell.getStringCellValue().trim();
+        if (cell.getCellType() == CellType.NUMERIC) return String.valueOf((int) cell.getNumericCellValue());
+        return "";
     }
 }
