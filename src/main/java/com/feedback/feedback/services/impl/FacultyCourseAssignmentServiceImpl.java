@@ -184,10 +184,14 @@ public class FacultyCourseAssignmentServiceImpl implements FacultyCourseAssignme
             }
 
             int successCount = 0;
+            int deptNotFoundCount = 0;
+            int alreadyAssignedCount = 0;
+            int rowCount = 0;
 
             for (int i = 1; i <= sheet.getLastRowNum(); i++) {
                 Row row = sheet.getRow(i);
                 if (row == null) continue;
+                rowCount++;
 
                 String departmentName = getCellValue(row.getCell(departmentIdx));
                 String courseName = getCellValue(row.getCell(courseNameIdx));
@@ -196,7 +200,10 @@ public class FacultyCourseAssignmentServiceImpl implements FacultyCourseAssignme
                 if (departmentName.isEmpty() || courseName.isEmpty() || facultyName.isEmpty()) continue;
 
                 Department department = departmentRepository.findByDepartmentName(departmentName).orElse(null);
-                if (department == null) continue; // Department must exist
+                if (department == null) {
+                    deptNotFoundCount++;
+                    continue;
+                }
 
                 Course course = courseRepository.findByCourseName(courseName).orElse(null);
                 if (course == null) {
@@ -224,25 +231,34 @@ public class FacultyCourseAssignmentServiceImpl implements FacultyCourseAssignme
                     facultyRepository.save(faculty);
                 }
 
-                if (faculty != null && department != null && course != null) {
-                    boolean alreadyAssigned = assignmentRepository.existsByFacultyIdAndDepartmentIdAndCourseId(
-                            faculty.getId(), department.getId(), course.getId());
-                    
-                    if (!alreadyAssigned) {
-                        FacultyCourseAssignment assignment = FacultyCourseAssignment.builder()
-                                .faculty(faculty)
-                                .department(department)
-                                .course(course)
-                                .build();
-                        assignmentRepository.save(assignment);
-                        successCount++;
-                    }
+                boolean alreadyAssigned = assignmentRepository.existsByFacultyIdAndDepartmentIdAndCourseId(
+                        faculty.getId(), department.getId(), course.getId());
+                
+                if (!alreadyAssigned) {
+                    FacultyCourseAssignment assignment = FacultyCourseAssignment.builder()
+                            .faculty(faculty)
+                            .department(department)
+                            .course(course)
+                            .build();
+                    assignmentRepository.save(assignment);
+                    successCount++;
+                } else {
+                    alreadyAssignedCount++;
                 }
+            }
+
+            StringBuilder finalMessage = new StringBuilder();
+            finalMessage.append("Bulk upload processed. ")
+                    .append(successCount).append(" created, ")
+                    .append(alreadyAssignedCount).append(" already existed");
+            
+            if (deptNotFoundCount > 0) {
+                finalMessage.append(", ").append(deptNotFoundCount).append(" skipped (Department not found)");
             }
 
             return Response.builder()
                     .status(200)
-                    .message("Bulk upload processed successfully. " + successCount + " assignments created.")
+                    .message(finalMessage.toString())
                     .build();
         } catch (Exception e) {
             log.error("Error processing bulk upload", e);
