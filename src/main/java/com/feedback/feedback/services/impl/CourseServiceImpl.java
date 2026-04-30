@@ -33,7 +33,7 @@ public class CourseServiceImpl implements CourseService {
 
     @Override
     public Response createCourse(CourseRequest courseRequest) {
-        if(courseRepository.findByCourseName(courseRequest.getCourseName()).isPresent()){
+        if(courseRepository.findByCourseNameIgnoreCase(courseRequest.getCourseName()).isPresent()){
             throw new AlreadyExistException("Course Already Exist");
         }
 

@@ -51,7 +51,7 @@ public class FeedbackServiceImpl implements FeedbackService {
 
                 String facultyName = row.getCell(4).getStringCellValue();
 
-                Faculty faculty = facultyRepository.findByFacultyName(facultyName)
+                Faculty faculty = facultyRepository.findByFacultyNameIgnoreCase(facultyName)
                         .orElseThrow(() -> new RuntimeException("Faculty not found: " + facultyName));
 
                 int q1 = (int) row.getCell(6).getNumericCellValue();
