@@ -18,6 +18,8 @@ import java.util.List;
 public class DashboardServiceImpl implements Dashboard {
     private final FeedbackRepository feedbackRepository;
     private final FacultyRepository facultyRepository;
+    private final com.feedback.feedback.repositories.CourseRepository courseRepository;
+    private final com.feedback.feedback.repositories.DepartmentRepository departmentRepository;
 
     @Override
     public Response getDashboard() {
@@ -28,7 +30,12 @@ public class DashboardServiceImpl implements Dashboard {
                 .totalFeedback(getTotalFeedback())
                 .averageRating(getAverageFeedback())
                 .totalFaculty(getTotalFacultyMember())
+                .totalCourses(courseRepository.count())
+                .totalDepartments(departmentRepository.count())
                 .faculties(getTopThreeFacultyMember())
+                .departmentPerformance(feedbackRepository.findDepartmentPerformance())
+                .feedbackVolume(feedbackRepository.findFeedbackVolumeByDepartment())
+                .ratingTrend(feedbackRepository.findMonthlyRatingTrend())
                 .build();
     }
 

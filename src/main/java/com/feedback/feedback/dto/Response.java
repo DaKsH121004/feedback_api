@@ -47,6 +47,12 @@ public class Response {
     private Long totalFeedback;
     private Double averageRating;
     private Long totalFaculty;
+    private Long totalCourses;
+    private Long totalDepartments;
+
+    private List<ChartDataDto> departmentPerformance;
+    private List<ChartDataDto> ratingTrend;
+    private List<ChartDataDto> feedbackVolume;
 
     private String url;
 
