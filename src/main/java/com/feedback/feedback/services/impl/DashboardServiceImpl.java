@@ -35,9 +35,15 @@ public class DashboardServiceImpl implements Dashboard {
                 .totalCourses(courseRepository.count())
                 .totalDepartments(departmentRepository.count())
                 .faculties(getTopThreeFacultyMember())
-                .departmentPerformance(feedbackRepository.findDepartmentPerformance())
-                .feedbackVolume(feedbackRepository.findFeedbackVolumeByDepartment())
-                .ratingTrend(feedbackRepository.findMonthlyRatingTrend())
+                .departmentPerformance(feedbackRepository.findDepartmentPerformance().stream()
+                        .map(p -> new com.feedback.feedback.dto.ChartDataDto(p.getLabel(), p.getValue()))
+                        .toList())
+                .feedbackVolume(feedbackRepository.findFeedbackVolumeByDepartment().stream()
+                        .map(p -> new com.feedback.feedback.dto.ChartDataDto(p.getLabel(), p.getValue()))
+                        .toList())
+                .ratingTrend(feedbackRepository.findMonthlyRatingTrend().stream()
+                        .map(p -> new com.feedback.feedback.dto.ChartDataDto(p.getLabel(), p.getValue()))
+                        .toList())
                 .build();
     }
 

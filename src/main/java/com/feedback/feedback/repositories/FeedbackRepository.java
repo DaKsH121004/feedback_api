@@ -11,15 +11,15 @@ public interface FeedbackRepository extends JpaRepository<Feedback, Long> {
     @Query("SELECT AVG(f.averageRating) FROM Faculty f")
     Double findAverageRatingFromFaculty();
 
-    @Query("SELECT new com.feedback.feedback.dto.ChartDataDto(d.departmentName, AVG((f.q1 + f.q2 + f.q3 + f.q4 + f.q5) / 5.0)) " +
+    @Query("SELECT d.departmentName as label, AVG((f.q1 + f.q2 + f.q3 + f.q4 + f.q5) / 5.0) as value " +
            "FROM Feedback f JOIN f.department d GROUP BY d.id, d.departmentName")
-    List<com.feedback.feedback.dto.ChartDataDto> findDepartmentPerformance();
+    List<com.feedback.feedback.dto.ChartDataProjection> findDepartmentPerformance();
 
-    @Query("SELECT new com.feedback.feedback.dto.ChartDataDto(d.departmentName, CAST(COUNT(f) AS double)) " +
+    @Query("SELECT d.departmentName as label, COUNT(f) as value " +
            "FROM Feedback f JOIN f.department d GROUP BY d.id, d.departmentName")
-    List<com.feedback.feedback.dto.ChartDataDto> findFeedbackVolumeByDepartment();
+    List<com.feedback.feedback.dto.ChartDataProjection> findFeedbackVolumeByDepartment();
 
-    @Query("SELECT new com.feedback.feedback.dto.ChartDataDto(FUNCTION('DATE_FORMAT', f.createdAt, '%b %Y'), AVG((f.q1 + f.q2 + f.q3 + f.q4 + f.q5) / 5.0)) " +
+    @Query("SELECT FUNCTION('DATE_FORMAT', f.createdAt, '%b %Y') as label, AVG((f.q1 + f.q2 + f.q3 + f.q4 + f.q5) / 5.0) as value " +
            "FROM Feedback f GROUP BY FUNCTION('DATE_FORMAT', f.createdAt, '%b %Y') ORDER BY MIN(f.createdAt)")
-    List<com.feedback.feedback.dto.ChartDataDto> findMonthlyRatingTrend();
+    List<com.feedback.feedback.dto.ChartDataProjection> findMonthlyRatingTrend();
 }
