@@ -184,10 +184,10 @@ public class FacultyCourseAssignmentServiceImpl implements FacultyCourseAssignme
             }
 
             int successCount = 0;
-            int deptNotFoundCount = 0;
-            int courseNotFoundCount = 0;
-            int facultyNotFoundCount = 0;
             int alreadyAssignedCount = 0;
+            java.util.Set<String> missingDepts = new java.util.HashSet<>();
+            java.util.Set<String> missingCourses = new java.util.HashSet<>();
+            java.util.Set<String> missingFaculties = new java.util.HashSet<>();
 
             for (int i = 1; i <= sheet.getLastRowNum(); i++) {
                 Row row = sheet.getRow(i);
@@ -201,19 +201,19 @@ public class FacultyCourseAssignmentServiceImpl implements FacultyCourseAssignme
 
                 Department department = departmentRepository.findByDepartmentNameIgnoreCase(departmentName).orElse(null);
                 if (department == null) {
-                    deptNotFoundCount++;
+                    missingDepts.add(departmentName);
                     continue;
                 }
 
                 Course course = courseRepository.findByCourseNameIgnoreCase(courseName).orElse(null);
                 if (course == null) {
-                    courseNotFoundCount++;
+                    missingCourses.add(courseName);
                     continue;
                 }
 
                 Faculty faculty = facultyRepository.findByFacultyNameIgnoreCase(facultyName).orElse(null);
                 if (faculty == null) {
-                    facultyNotFoundCount++;
+                    missingFaculties.add(facultyName);
                     continue;
                 }
 
@@ -248,12 +248,12 @@ public class FacultyCourseAssignmentServiceImpl implements FacultyCourseAssignme
                     .append(alreadyAssignedCount).append(" already existed. ");
             
             List<String> errors = new java.util.ArrayList<>();
-            if (deptNotFoundCount > 0) errors.add(deptNotFoundCount + " Departments not found");
-            if (courseNotFoundCount > 0) errors.add(courseNotFoundCount + " Courses not found");
-            if (facultyNotFoundCount > 0) errors.add(facultyNotFoundCount + " Faculty not found");
+            if (!missingDepts.isEmpty()) errors.add("Departments not found: [" + String.join(", ", missingDepts) + "]");
+            if (!missingCourses.isEmpty()) errors.add("Courses not found: [" + String.join(", ", missingCourses) + "]");
+            if (!missingFaculties.isEmpty()) errors.add("Faculty not found: [" + String.join(", ", missingFaculties) + "]");
             
             if (!errors.isEmpty()) {
-                finalMessage.append("Skipped: ").append(String.join(", ", errors)).append(".");
+                finalMessage.append("Skipped entries because: ").append(String.join(". ", errors)).append(".");
             }
 
             return Response.builder()
