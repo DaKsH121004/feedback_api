@@ -21,16 +21,12 @@ public class Faculty {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
-    @NotBlank(message = "Name is required")
     private String facultyName;
-    @NotBlank(message = "Faculty Code is required")
     @Column(unique = true)
     private String facultyCode;
-    @NotBlank(message = "Email is required")
     @Email
     @Column(unique = true)
     private String facultyEmail;
-    @NotBlank(message = "Phone number is required")
     @Column(unique = true)
     private String facultyPhone;
 

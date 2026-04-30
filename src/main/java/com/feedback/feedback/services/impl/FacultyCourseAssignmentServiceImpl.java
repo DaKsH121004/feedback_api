@@ -167,19 +167,19 @@ public class FacultyCourseAssignmentServiceImpl implements FacultyCourseAssignme
             Sheet sheet = workbook.getSheetAt(0);
             Row headerRow = sheet.getRow(0);
 
-            int sectionIdx = -1;
+            int departmentIdx = -1;
             int courseNameIdx = -1;
             int facultyNameIdx = -1;
 
             for (Cell cell : headerRow) {
                 String header = cell.getStringCellValue().trim();
-                if (header.equalsIgnoreCase("Section")) sectionIdx = cell.getColumnIndex();
+                if (header.equalsIgnoreCase("Department")) departmentIdx = cell.getColumnIndex();
                 if (header.equalsIgnoreCase("Course Name")) courseNameIdx = cell.getColumnIndex();
                 if (header.equalsIgnoreCase("Faculty Name")) facultyNameIdx = cell.getColumnIndex();
             }
 
-            if (sectionIdx == -1 || courseNameIdx == -1 || facultyNameIdx == -1) {
-                return Response.builder().status(400).message("Invalid Excel template. Required columns: Section, Course Name, Faculty Name").build();
+            if (departmentIdx == -1 || courseNameIdx == -1 || facultyNameIdx == -1) {
+                return Response.builder().status(400).message("Invalid Excel template. Required columns: Course Name, Faculty Name, Department").build();
             }
 
             int successCount = 0;
@@ -188,15 +188,45 @@ public class FacultyCourseAssignmentServiceImpl implements FacultyCourseAssignme
                 Row row = sheet.getRow(i);
                 if (row == null) continue;
 
-                String section = getCellValue(row.getCell(sectionIdx));
+                String departmentName = getCellValue(row.getCell(departmentIdx));
                 String courseName = getCellValue(row.getCell(courseNameIdx));
                 String facultyName = getCellValue(row.getCell(facultyNameIdx));
 
-                if (section.isEmpty() || courseName.isEmpty() || facultyName.isEmpty()) continue;
+                if (departmentName.isEmpty() || courseName.isEmpty() || facultyName.isEmpty()) continue;
+
+                Department department = departmentRepository.findByDepartmentName(departmentName).orElse(null);
+                if (department == null) continue; // Department must exist
+
+                Course course = courseRepository.findByCourseName(courseName).orElse(null);
+                if (course == null) {
+                    course = Course.builder()
+                            .courseName(courseName)
+                            .createdAt(LocalDateTime.now())
+                            .build();
+                    course = courseRepository.save(course);
+                }
 
                 Faculty faculty = facultyRepository.findByFacultyName(facultyName).orElse(null);
-                Department department = departmentRepository.findByDepartmentName(section).orElse(null);
-                Course course = courseRepository.findByCourseName(courseName).orElse(null);
+                if (faculty == null) {
+                    faculty = Faculty.builder()
+                            .facultyName(facultyName)
+                            .facultyCode(null)
+                            .facultyEmail(null)
+                            .facultyPhone(null)
+                            .createAt(LocalDateTime.now())
+                            .departments(new java.util.ArrayList<>(List.of(department)))
+                            .build();
+                    faculty = facultyRepository.save(faculty);
+                } else {
+                    // Check if faculty belongs to department, if not add it
+                    if (faculty.getDepartments() == null) {
+                        faculty.setDepartments(new java.util.ArrayList<>(List.of(department)));
+                        facultyRepository.save(faculty);
+                    } else if (faculty.getDepartments().stream().noneMatch(d -> d.getId().equals(department.getId()))) {
+                        faculty.getDepartments().add(department);
+                        facultyRepository.save(faculty);
+                    }
+                }
 
                 if (faculty != null && department != null && course != null) {
                     boolean alreadyAssigned = assignmentRepository.existsByFacultyIdAndDepartmentIdAndCourseId(
