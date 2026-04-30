@@ -189,6 +189,16 @@ public class FacultyCourseAssignmentServiceImpl implements FacultyCourseAssignme
             java.util.Set<String> missingCourses = new java.util.HashSet<>();
             java.util.Set<String> missingFaculties = new java.util.HashSet<>();
 
+            // Optimization: Fetch all entities into maps for O(1) lookup
+            java.util.Map<String, Department> deptMap = new java.util.TreeMap<>(String.CASE_INSENSITIVE_ORDER);
+            departmentRepository.findAll().forEach(d -> deptMap.put(d.getDepartmentName(), d));
+
+            java.util.Map<String, Course> courseMap = new java.util.TreeMap<>(String.CASE_INSENSITIVE_ORDER);
+            courseRepository.findAll().forEach(c -> courseMap.put(c.getCourseName(), c));
+
+            java.util.Map<String, Faculty> facultyMap = new java.util.TreeMap<>(String.CASE_INSENSITIVE_ORDER);
+            facultyRepository.findAll().forEach(f -> facultyMap.put(f.getFacultyName(), f));
+
             for (int i = 1; i <= sheet.getLastRowNum(); i++) {
                 Row row = sheet.getRow(i);
                 if (row == null) continue;
@@ -199,19 +209,19 @@ public class FacultyCourseAssignmentServiceImpl implements FacultyCourseAssignme
 
                 if (departmentName.isEmpty() || courseName.isEmpty() || facultyName.isEmpty()) continue;
 
-                Department department = departmentRepository.findByDepartmentNameIgnoreCase(departmentName).orElse(null);
+                Department department = deptMap.get(departmentName);
                 if (department == null) {
                     missingDepts.add(departmentName);
                     continue;
                 }
 
-                Course course = courseRepository.findByCourseNameIgnoreCase(courseName).orElse(null);
+                Course course = courseMap.get(courseName);
                 if (course == null) {
                     missingCourses.add(courseName);
                     continue;
                 }
 
-                Faculty faculty = facultyRepository.findByFacultyNameIgnoreCase(facultyName).orElse(null);
+                Faculty faculty = facultyMap.get(facultyName);
                 if (faculty == null) {
                     missingFaculties.add(facultyName);
                     continue;

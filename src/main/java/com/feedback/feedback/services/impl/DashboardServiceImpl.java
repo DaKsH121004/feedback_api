@@ -5,6 +5,8 @@ import com.feedback.feedback.dto.Response;
 import com.feedback.feedback.entities.Faculty;
 import com.feedback.feedback.repositories.FacultyRepository;
 import com.feedback.feedback.repositories.FeedbackRepository;
+import com.feedback.feedback.repositories.CourseRepository;
+import com.feedback.feedback.repositories.DepartmentRepository;
 import com.feedback.feedback.services.Dashboard;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -18,8 +20,8 @@ import java.util.List;
 public class DashboardServiceImpl implements Dashboard {
     private final FeedbackRepository feedbackRepository;
     private final FacultyRepository facultyRepository;
-    private final com.feedback.feedback.repositories.CourseRepository courseRepository;
-    private final com.feedback.feedback.repositories.DepartmentRepository departmentRepository;
+    private final CourseRepository courseRepository;
+    private final DepartmentRepository departmentRepository;
 
     @Override
     public Response getDashboard() {
@@ -27,9 +29,9 @@ public class DashboardServiceImpl implements Dashboard {
         return Response.builder()
                 .status(200)
                 .message("Dashboard fetched successfully")
-                .totalFeedback(getTotalFeedback())
+                .totalFeedback(feedbackRepository.count())
                 .averageRating(getAverageFeedback())
-                .totalFaculty(getTotalFacultyMember())
+                .totalFaculty(facultyRepository.count())
                 .totalCourses(courseRepository.count())
                 .totalDepartments(departmentRepository.count())
                 .faculties(getTopThreeFacultyMember())
@@ -39,30 +41,9 @@ public class DashboardServiceImpl implements Dashboard {
                 .build();
     }
 
-    private Long getTotalFeedback() {
-
-        Long totalFeedback = feedbackRepository.count();
-
-        return totalFeedback;
-    }
-
-
     private Double getAverageFeedback() {
-
         Double avgRating = feedbackRepository.findAverageRatingFromFaculty();
-
-        if (avgRating == null) {
-            avgRating = 0.0;
-        }
-
-        return avgRating;
-    }
-
-    private Long getTotalFacultyMember() {
-
-        Long totalFaculty = facultyRepository.count();
-
-        return totalFaculty;
+        return avgRating != null ? avgRating : 0.0;
     }
 
     private List<FacultyDto> getTopThreeFacultyMember() {
