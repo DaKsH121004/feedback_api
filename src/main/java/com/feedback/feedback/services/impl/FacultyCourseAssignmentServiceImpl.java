@@ -185,13 +185,13 @@ public class FacultyCourseAssignmentServiceImpl implements FacultyCourseAssignme
 
             int successCount = 0;
             int deptNotFoundCount = 0;
+            int courseNotFoundCount = 0;
+            int facultyNotFoundCount = 0;
             int alreadyAssignedCount = 0;
-            int rowCount = 0;
 
             for (int i = 1; i <= sheet.getLastRowNum(); i++) {
                 Row row = sheet.getRow(i);
                 if (row == null) continue;
-                rowCount++;
 
                 String departmentName = getCellValue(row.getCell(departmentIdx));
                 String courseName = getCellValue(row.getCell(courseNameIdx));
@@ -199,27 +199,22 @@ public class FacultyCourseAssignmentServiceImpl implements FacultyCourseAssignme
 
                 if (departmentName.isEmpty() || courseName.isEmpty() || facultyName.isEmpty()) continue;
 
-                Department department = departmentRepository.findByDepartmentName(departmentName).orElse(null);
+                Department department = departmentRepository.findByDepartmentNameIgnoreCase(departmentName).orElse(null);
                 if (department == null) {
                     deptNotFoundCount++;
                     continue;
                 }
 
-                Course course = courseRepository.findByCourseName(courseName).orElse(null);
+                Course course = courseRepository.findByCourseNameIgnoreCase(courseName).orElse(null);
                 if (course == null) {
-                    course = Course.builder()
-                            .courseName(courseName)
-                            .createdAt(LocalDateTime.now())
-                            .build();
-                    course = courseRepository.save(course);
+                    courseNotFoundCount++;
+                    continue;
                 }
 
-                Faculty faculty = facultyRepository.findByFacultyName(facultyName).orElse(null);
+                Faculty faculty = facultyRepository.findByFacultyNameIgnoreCase(facultyName).orElse(null);
                 if (faculty == null) {
-                    return Response.builder()
-                            .status(400)
-                            .message("Faculty '" + facultyName + "' does not exist in the database. Please create the faculty first.")
-                            .build();
+                    facultyNotFoundCount++;
+                    continue;
                 }
 
                 // Check if faculty belongs to department, if not add it
@@ -248,12 +243,17 @@ public class FacultyCourseAssignmentServiceImpl implements FacultyCourseAssignme
             }
 
             StringBuilder finalMessage = new StringBuilder();
-            finalMessage.append("Bulk upload processed. ")
+            finalMessage.append("Bulk upload processed: ")
                     .append(successCount).append(" created, ")
-                    .append(alreadyAssignedCount).append(" already existed");
+                    .append(alreadyAssignedCount).append(" already existed. ");
             
-            if (deptNotFoundCount > 0) {
-                finalMessage.append(", ").append(deptNotFoundCount).append(" skipped (Department not found)");
+            List<String> errors = new java.util.ArrayList<>();
+            if (deptNotFoundCount > 0) errors.add(deptNotFoundCount + " Departments not found");
+            if (courseNotFoundCount > 0) errors.add(courseNotFoundCount + " Courses not found");
+            if (facultyNotFoundCount > 0) errors.add(facultyNotFoundCount + " Faculty not found");
+            
+            if (!errors.isEmpty()) {
+                finalMessage.append("Skipped: ").append(String.join(", ", errors)).append(".");
             }
 
             return Response.builder()
