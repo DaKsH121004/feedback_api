@@ -6,6 +6,7 @@ import com.feedback.feedback.services.FacultyCourseAssignmentService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
 @RestController
 @RequestMapping("/api/v1/assignment")
@@ -36,5 +37,11 @@ public class AssignmentController {
     @PreAuthorize("hasAuthority('SUPERADMIN')")
     public Response delete(@PathVariable Long id) {
         return assignmentService.deleteAssignment(id);
+    }
+
+    @PostMapping("/bulk-upload")
+    @PreAuthorize("hasAuthority('SUPERADMIN')")
+    public Response bulkUpload(@RequestParam("file") MultipartFile file) {
+        return assignmentService.processBulkUpload(file);
     }
 }

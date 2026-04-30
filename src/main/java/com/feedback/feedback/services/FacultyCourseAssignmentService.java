@@ -8,4 +8,5 @@ public interface FacultyCourseAssignmentService {
     Response updateAssignment(Long id, AssignmentRequest request);
     Response deleteAssignment(Long id);
     Response getAllAssignments();
+    Response processBulkUpload(org.springframework.web.multipart.MultipartFile file);
 }

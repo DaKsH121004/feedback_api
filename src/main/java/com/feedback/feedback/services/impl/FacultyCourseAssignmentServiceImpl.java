@@ -14,6 +14,10 @@ import com.feedback.feedback.repositories.DepartmentRepository;
 import com.feedback.feedback.repositories.FacultyCourseAssignmentRepository;
 import com.feedback.feedback.repositories.FacultyRepository;
 import com.feedback.feedback.services.FacultyCourseAssignmentService;
+import org.apache.poi.ss.usermodel.*;
+import org.apache.poi.xssf.usermodel.XSSFWorkbook;
+import org.springframework.web.multipart.MultipartFile;
+import java.io.InputStream;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -155,5 +159,75 @@ public class FacultyCourseAssignmentServiceImpl implements FacultyCourseAssignme
                 .message("Assignments fetched successfully")
                 .assignments(dtoList)
                 .build();
+    }
+
+    @Override
+    public Response processBulkUpload(MultipartFile file) {
+        try (InputStream is = file.getInputStream(); Workbook workbook = new XSSFWorkbook(is)) {
+            Sheet sheet = workbook.getSheetAt(0);
+            Row headerRow = sheet.getRow(0);
+
+            int sectionIdx = -1;
+            int courseNameIdx = -1;
+            int facultyNameIdx = -1;
+
+            for (Cell cell : headerRow) {
+                String header = cell.getStringCellValue().trim();
+                if (header.equalsIgnoreCase("Section")) sectionIdx = cell.getColumnIndex();
+                if (header.equalsIgnoreCase("Course Name")) courseNameIdx = cell.getColumnIndex();
+                if (header.equalsIgnoreCase("Faculty Name")) facultyNameIdx = cell.getColumnIndex();
+            }
+
+            if (sectionIdx == -1 || courseNameIdx == -1 || facultyNameIdx == -1) {
+                return Response.builder().status(400).message("Invalid Excel template. Required columns: Section, Course Name, Faculty Name").build();
+            }
+
+            int successCount = 0;
+
+            for (int i = 1; i <= sheet.getLastRowNum(); i++) {
+                Row row = sheet.getRow(i);
+                if (row == null) continue;
+
+                String section = getCellValue(row.getCell(sectionIdx));
+                String courseName = getCellValue(row.getCell(courseNameIdx));
+                String facultyName = getCellValue(row.getCell(facultyNameIdx));
+
+                if (section.isEmpty() || courseName.isEmpty() || facultyName.isEmpty()) continue;
+
+                Faculty faculty = facultyRepository.findByFacultyName(facultyName).orElse(null);
+                Department department = departmentRepository.findByDepartmentName(section).orElse(null);
+                Course course = courseRepository.findByCourseName(courseName).orElse(null);
+
+                if (faculty != null && department != null && course != null) {
+                    boolean alreadyAssigned = assignmentRepository.existsByFacultyIdAndDepartmentIdAndCourseId(
+                            faculty.getId(), department.getId(), course.getId());
+                    
+                    if (!alreadyAssigned) {
+                        FacultyCourseAssignment assignment = FacultyCourseAssignment.builder()
+                                .faculty(faculty)
+                                .department(department)
+                                .course(course)
+                                .build();
+                        assignmentRepository.save(assignment);
+                        successCount++;
+                    }
+                }
+            }
+
+            return Response.builder()
+                    .status(200)
+                    .message("Bulk upload processed successfully. " + successCount + " assignments created.")
+                    .build();
+        } catch (Exception e) {
+            log.error("Error processing bulk upload", e);
+            return Response.builder().status(500).message("Error processing file: " + e.getMessage()).build();
+        }
+    }
+
+    private String getCellValue(Cell cell) {
+        if (cell == null) return "";
+        if (cell.getCellType() == CellType.STRING) return cell.getStringCellValue().trim();
+        if (cell.getCellType() == CellType.NUMERIC) return String.valueOf((int) cell.getNumericCellValue());
+        return "";
     }
 }
