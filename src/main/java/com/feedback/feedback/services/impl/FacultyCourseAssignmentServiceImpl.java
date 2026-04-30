@@ -209,24 +209,19 @@ public class FacultyCourseAssignmentServiceImpl implements FacultyCourseAssignme
 
                 Faculty faculty = facultyRepository.findByFacultyName(facultyName).orElse(null);
                 if (faculty == null) {
-                    faculty = Faculty.builder()
-                            .facultyName(facultyName)
-                            .facultyCode(null)
-                            .facultyEmail(null)
-                            .facultyPhone(null)
-                            .createAt(LocalDateTime.now())
-                            .departments(new java.util.ArrayList<>(List.of(department)))
+                    return Response.builder()
+                            .status(400)
+                            .message("Faculty '" + facultyName + "' does not exist in the database. Please create the faculty first.")
                             .build();
-                    faculty = facultyRepository.save(faculty);
-                } else {
-                    // Check if faculty belongs to department, if not add it
-                    if (faculty.getDepartments() == null) {
-                        faculty.setDepartments(new java.util.ArrayList<>(List.of(department)));
-                        facultyRepository.save(faculty);
-                    } else if (faculty.getDepartments().stream().noneMatch(d -> d.getId().equals(department.getId()))) {
-                        faculty.getDepartments().add(department);
-                        facultyRepository.save(faculty);
-                    }
+                }
+
+                // Check if faculty belongs to department, if not add it
+                if (faculty.getDepartments() == null) {
+                    faculty.setDepartments(new java.util.ArrayList<>(List.of(department)));
+                    facultyRepository.save(faculty);
+                } else if (faculty.getDepartments().stream().noneMatch(d -> d.getId().equals(department.getId()))) {
+                    faculty.getDepartments().add(department);
+                    facultyRepository.save(faculty);
                 }
 
                 if (faculty != null && department != null && course != null) {
