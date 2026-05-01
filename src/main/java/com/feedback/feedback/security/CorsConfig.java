@@ -12,10 +12,11 @@ public class CorsConfig {
         return new WebMvcConfigurer() {
             @Override
             public void addCorsMappings(CorsRegistry registry) {
-                registry.addMapping("/**").allowedMethods("GET","POST","PUT","DELETE").allowedOrigins(
-                    "http://localhost:3000",
-                        "https://final-feedback-ui.vercel.app"
-                );
+                registry.addMapping("/**")
+                        .allowedMethods("GET", "POST", "PUT", "DELETE", "OPTIONS")
+                        .allowedOrigins("http://localhost:3000", "https://final-feedback-ui.vercel.app")
+                        .allowedHeaders("*")
+                        .allowCredentials(true);
             }
         };
     }
