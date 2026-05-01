@@ -8,6 +8,10 @@ import java.util.List;
 
 public interface FeedbackRepository extends JpaRepository<Feedback, Long> {
     Boolean existsByStudentRollNoAndFacultyIdAndCourseId(String   studentRollNo, Long  facultyId, Long  courseId);
+    
+    @org.springframework.transaction.annotation.Transactional
+    void deleteByCourseId(Long courseId);
+
     @Query("SELECT AVG(f.averageRating) FROM Faculty f")
     Double findAverageRatingFromFaculty();
 

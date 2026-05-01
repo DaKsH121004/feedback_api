@@ -9,4 +9,7 @@ public interface FacultyCourseAssignmentRepository extends JpaRepository<Faculty
             Long departmentId,
             Long courseId
     );
+
+    @org.springframework.transaction.annotation.Transactional
+    void deleteByCourseId(Long courseId);
 }

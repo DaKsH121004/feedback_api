@@ -9,6 +9,8 @@ import com.feedback.feedback.exceptions.AlreadyExistException;
 import com.feedback.feedback.exceptions.NotFoundException;
 import com.feedback.feedback.repositories.CourseRepository;
 import com.feedback.feedback.repositories.FacultyRepository;
+import com.feedback.feedback.repositories.FacultyCourseAssignmentRepository;
+import com.feedback.feedback.repositories.FeedbackRepository;
 import com.feedback.feedback.services.CourseService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -34,6 +36,8 @@ public class CourseServiceImpl implements CourseService {
     private final CourseRepository courseRepository;
     private final FacultyRepository facultyRepository;
     private final com.feedback.feedback.repositories.DepartmentRepository departmentRepository;
+    private final FacultyCourseAssignmentRepository facultyCourseAssignmentRepository;
+    private final FeedbackRepository feedbackRepository;
     private final ModelMapper modelMapper;
 
     @Override
@@ -185,12 +189,24 @@ public class CourseServiceImpl implements CourseService {
     }
 
     @Override
+    @org.springframework.transaction.annotation.Transactional
     public Response deleteCourse(Long id) {
         if (!courseRepository.existsById(id)) {
             throw new NotFoundException("Course Not Found");
         }
+        facultyCourseAssignmentRepository.deleteByCourseId(id);
+        feedbackRepository.deleteByCourseId(id);
         courseRepository.deleteById(id);
         return Response.builder().status(200).message("Course Deleted successfully").build();
+    }
+
+    @Override
+    @org.springframework.transaction.annotation.Transactional
+    public Response deleteAllCourses() {
+        facultyCourseAssignmentRepository.deleteAll();
+        feedbackRepository.deleteAll();
+        courseRepository.deleteAll();
+        return Response.builder().status(200).message("All Courses Deleted successfully").build();
     }
 
     private String getCellValue(Cell cell) {
