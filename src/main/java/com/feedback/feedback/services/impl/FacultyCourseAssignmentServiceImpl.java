@@ -237,9 +237,13 @@ public class FacultyCourseAssignmentServiceImpl implements FacultyCourseAssignme
                     Faculty faculty = findFacultyFuzzy(fNameRaw, allFacultiesList);
                     if (faculty == null) {
                         // Create faculty on the fly if not found to ensure assignment completes
+                        // Generate a dummy unique faculty code since it's required by the DB
+                        String dummyCode = "F_AUTO_" + java.util.UUID.randomUUID().toString().substring(0, 8).toUpperCase();
                         faculty = Faculty.builder()
                                 .facultyName(fNameRaw.trim())
+                                .facultyCode(dummyCode)
                                 .departments(new java.util.ArrayList<>(java.util.List.of(department)))
+                                .createAt(java.time.LocalDateTime.now())
                                 .build();
                         faculty = facultyRepository.save(faculty);
                         allFacultiesList.add(faculty); // Add to cache for subsequent rows
