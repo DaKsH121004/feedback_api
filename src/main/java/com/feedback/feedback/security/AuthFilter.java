@@ -30,18 +30,6 @@ public class AuthFilter extends OncePerRequestFilter {
                                     FilterChain filterChain)
             throws ServletException, IOException {
 
-        String path = request.getServletPath();
-
-        if (path.startsWith("/api/v1/auth")) {
-            filterChain.doFilter(request, response);
-            return;
-        }
-
-        if (path.equals("/api/v1/feedback/add")) {
-        filterChain.doFilter(request, response);
-        return;
-    }
-
         try {
             String token = getTokenFromRequest(request);
 
