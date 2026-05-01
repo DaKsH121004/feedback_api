@@ -236,17 +236,8 @@ public class FacultyCourseAssignmentServiceImpl implements FacultyCourseAssignme
                     
                     Faculty faculty = findFacultyFuzzy(fNameRaw, allFacultiesList);
                     if (faculty == null) {
-                        // Create faculty on the fly if not found to ensure assignment completes
-                        // Generate a dummy unique faculty code since it's required by the DB
-                        String dummyCode = "F_AUTO_" + java.util.UUID.randomUUID().toString().substring(0, 8).toUpperCase();
-                        faculty = Faculty.builder()
-                                .facultyName(fNameRaw.trim())
-                                .facultyCode(dummyCode)
-                                .departments(new java.util.ArrayList<>(java.util.List.of(department)))
-                                .createAt(java.time.LocalDateTime.now())
-                                .build();
-                        faculty = facultyRepository.save(faculty);
-                        allFacultiesList.add(faculty); // Add to cache for subsequent rows
+                        missingFaculties.add(fNameRaw);
+                        continue;
                     }
 
                     // Check if faculty belongs to department, if not add it
@@ -283,6 +274,7 @@ public class FacultyCourseAssignmentServiceImpl implements FacultyCourseAssignme
             java.util.List<String> errors = new java.util.ArrayList<>();
             if (!missingDepts.isEmpty()) errors.add("Departments not found: [" + String.join(", ", missingDepts) + "]");
             if (!missingCourses.isEmpty()) errors.add("Courses not found: [" + String.join(", ", missingCourses) + "]");
+            if (!missingFaculties.isEmpty()) errors.add("Faculty not found: [" + String.join(", ", missingFaculties) + "]");
             
             if (!errors.isEmpty()) {
                 finalMessage.append("Skipped entries because: ").append(String.join(". ", errors)).append(".");
@@ -344,14 +336,22 @@ public class FacultyCourseAssignmentServiceImpl implements FacultyCourseAssignme
             }
         }
         
-        // 3. Match by first word (First name matching)
+        // 3. Match by first word (First name matching) - AGGRESSIVE
         String[] excelParts = cleanName.split("\\s+");
         if (excelParts.length > 0) {
+            String excelFirst = excelParts[0];
             for (Faculty f : allFaculties) {
                 String dbCleanName = cleanName(f.getFacultyName());
                 String[] dbParts = dbCleanName.split("\\s+");
-                if (dbParts.length > 0 && dbParts[0].equals(excelParts[0])) {
-                    return f;
+                if (dbParts.length > 0) {
+                    String dbFirst = dbParts[0];
+                    // Very aggressive: if one starts with the other and length is decent
+                    if (dbFirst.equals(excelFirst)) return f;
+                    if (dbFirst.length() > 3 && excelFirst.length() > 3) {
+                        if (dbFirst.startsWith(excelFirst) || excelFirst.startsWith(dbFirst)) {
+                            return f;
+                        }
+                    }
                 }
             }
         }
