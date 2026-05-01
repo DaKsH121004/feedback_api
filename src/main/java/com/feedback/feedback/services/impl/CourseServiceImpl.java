@@ -24,6 +24,8 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 import org.apache.poi.ss.usermodel.*;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
+import org.apache.poi.ss.usermodel.WorkbookFactory;
+import org.apache.poi.ss.usermodel.DateUtil;
 import java.io.InputStream;
 
 import java.time.LocalDateTime;
@@ -107,44 +109,74 @@ public class CourseServiceImpl implements CourseService {
 
     @Override
     public Response processBulkUpload(MultipartFile file) {
-        try (InputStream is = file.getInputStream(); Workbook workbook = new XSSFWorkbook(is)) {
+        try (InputStream is = file.getInputStream(); Workbook workbook = WorkbookFactory.create(is)) {
             Sheet sheet = workbook.getSheetAt(0);
             Row headerRow = sheet.getRow(0);
 
+            if (headerRow == null) {
+                return Response.builder().status(400).message("The uploaded file is empty.").build();
+            }
+
             int courseNameIdx = -1;
+            int departmentIdx = -1;
 
             for (Cell cell : headerRow) {
-                String header = cell.getStringCellValue().trim();
-                if (header.equalsIgnoreCase("Course Name")) courseNameIdx = cell.getColumnIndex();
+                if (cell.getCellType() == CellType.STRING) {
+                    String header = cell.getStringCellValue().trim().toLowerCase().replaceAll("\\s", "");
+                    if (header.equals("coursename") || header.equals("course") || header.equals("coursetitle")) {
+                        courseNameIdx = cell.getColumnIndex();
+                    }
+                    if (header.contains("department") || header.equals("dept")) {
+                        departmentIdx = cell.getColumnIndex();
+                    }
+                }
             }
 
             if (courseNameIdx == -1) {
-                return Response.builder().status(400).message("Invalid Excel template. Required column: Course Name").build();
+                return Response.builder().status(400).message("Invalid Excel template. Required column: 'Course Name' or 'Course'").build();
+            }
+
+            // Fetch departments for mapping if department column exists
+            java.util.Map<String, com.feedback.feedback.entities.Department> deptMap = new java.util.TreeMap<>(String.CASE_INSENSITIVE_ORDER);
+            if (departmentIdx != -1) {
+                departmentRepository.findAll().forEach(d -> deptMap.put(d.getDepartmentName().trim(), d));
             }
 
             int successCount = 0;
             java.util.List<String> skippedCourses = new java.util.ArrayList<>();
             java.util.List<String> addedCourses = new java.util.ArrayList<>();
 
-            for (int i = 1; i <= sheet.getLastRowNum(); i++) {
-                Row row = sheet.getRow(i);
-                if (row == null) continue;
+            // Iterate through all rows using the row iterator for better reliability
+            for (Row row : sheet) {
+                // Skip header row
+                if (row.getRowNum() == 0) continue;
 
                 String courseName = getCellValue(row.getCell(courseNameIdx));
 
-                if (courseName.isEmpty()) continue;
+                if (courseName == null || courseName.trim().isEmpty()) continue;
+
+                courseName = courseName.trim();
 
                 if (courseRepository.findByCourseNameIgnoreCase(courseName).isPresent()) {
                     skippedCourses.add(courseName);
                     continue;
                 }
 
-                Course course = Course.builder()
+                Course.CourseBuilder courseBuilder = Course.builder()
                         .courseName(courseName)
-                        .createdAt(LocalDateTime.now())
-                        .build();
+                        .createdAt(LocalDateTime.now());
 
-                courseRepository.save(course);
+                if (departmentIdx != -1) {
+                    String deptName = getCellValue(row.getCell(departmentIdx)).trim();
+                    if (!deptName.isEmpty()) {
+                        com.feedback.feedback.entities.Department department = deptMap.get(deptName);
+                        if (department != null) {
+                            courseBuilder.department(department);
+                        }
+                    }
+                }
+
+                courseRepository.save(courseBuilder.build());
                 addedCourses.add(courseName);
                 successCount++;
             }
@@ -152,13 +184,13 @@ public class CourseServiceImpl implements CourseService {
             StringBuilder finalMessage = new StringBuilder();
             finalMessage.append("Bulk upload processed: ")
                     .append(successCount).append(" created, ")
-                    .append(skippedCourses.size()).append(" already existed. ");
+                    .append(skippedCourses.size()).append(" already existed.");
 
             if (!skippedCourses.isEmpty()) {
-                finalMessage.append("Skipped (already exist): [").append(String.join(", ", skippedCourses)).append("]. ");
+                finalMessage.append(" Skipped (already exist): [").append(String.join(", ", skippedCourses)).append("].");
             }
             if (!addedCourses.isEmpty()) {
-                finalMessage.append("Added courses: [").append(String.join(", ", addedCourses)).append("].");
+                finalMessage.append(" Added courses: [").append(String.join(", ", addedCourses)).append("].");
             }
 
             return Response.builder()
@@ -211,8 +243,26 @@ public class CourseServiceImpl implements CourseService {
 
     private String getCellValue(Cell cell) {
         if (cell == null) return "";
-        if (cell.getCellType() == CellType.STRING) return cell.getStringCellValue().trim();
-        if (cell.getCellType() == CellType.NUMERIC) return String.valueOf((int) cell.getNumericCellValue());
-        return "";
+        switch (cell.getCellType()) {
+            case STRING:
+                return cell.getStringCellValue().trim();
+            case NUMERIC:
+                if (DateUtil.isCellDateFormatted(cell)) {
+                    return cell.getDateCellValue().toString();
+                }
+                return String.valueOf((long) cell.getNumericCellValue());
+            case BOOLEAN:
+                return String.valueOf(cell.getBooleanCellValue());
+            case FORMULA:
+                try {
+                    return cell.getStringCellValue().trim();
+                } catch (Exception e) {
+                    return String.valueOf(cell.getNumericCellValue());
+                }
+            case BLANK:
+                return "";
+            default:
+                return "";
+        }
     }
 }

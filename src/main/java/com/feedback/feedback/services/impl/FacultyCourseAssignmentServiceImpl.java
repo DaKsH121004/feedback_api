@@ -16,6 +16,8 @@ import com.feedback.feedback.repositories.FacultyRepository;
 import com.feedback.feedback.services.FacultyCourseAssignmentService;
 import org.apache.poi.ss.usermodel.*;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
+import org.apache.poi.ss.usermodel.WorkbookFactory;
+import org.apache.poi.ss.usermodel.DateUtil;
 import org.springframework.web.multipart.MultipartFile;
 import java.io.InputStream;
 import lombok.RequiredArgsConstructor;
@@ -163,20 +165,26 @@ public class FacultyCourseAssignmentServiceImpl implements FacultyCourseAssignme
     }
 
     @Override
-public Response processBulkUpload(MultipartFile file) {
-        try (InputStream is = file.getInputStream(); Workbook workbook = new XSSFWorkbook(is)) {
+    public Response processBulkUpload(MultipartFile file) {
+        try (InputStream is = file.getInputStream(); Workbook workbook = WorkbookFactory.create(is)) {
             Sheet sheet = workbook.getSheetAt(0);
             Row headerRow = sheet.getRow(0);
+
+            if (headerRow == null) {
+                return Response.builder().status(400).message("The uploaded file is empty.").build();
+            }
 
             int departmentIdx = -1;
             int courseNameIdx = -1;
             int facultyNameIdx = -1;
 
             for (Cell cell : headerRow) {
-                String header = cell.getStringCellValue().trim();
-                if (header.equalsIgnoreCase("Department")) departmentIdx = cell.getColumnIndex();
-                if (header.equalsIgnoreCase("Course Name")) courseNameIdx = cell.getColumnIndex();
-                if (header.equalsIgnoreCase("Faculty Name")) facultyNameIdx = cell.getColumnIndex();
+                if (cell.getCellType() == CellType.STRING) {
+                    String header = cell.getStringCellValue().trim().toLowerCase().replaceAll("\\s", "");
+                    if (header.contains("department") || header.equals("dept")) departmentIdx = cell.getColumnIndex();
+                    if (header.contains("course")) courseNameIdx = cell.getColumnIndex();
+                    if (header.contains("faculty")) facultyNameIdx = cell.getColumnIndex();
+                }
             }
 
             if (departmentIdx == -1 || courseNameIdx == -1 || facultyNameIdx == -1) {
@@ -191,23 +199,21 @@ public Response processBulkUpload(MultipartFile file) {
 
             // Optimization: Fetch all entities into maps for O(1) lookup
             java.util.Map<String, Department> deptMap = new java.util.TreeMap<>(String.CASE_INSENSITIVE_ORDER);
-            departmentRepository.findAll().forEach(d -> deptMap.put(d.getDepartmentName(), d));
+            departmentRepository.findAll().forEach(d -> deptMap.put(d.getDepartmentName().trim(), d));
 
             java.util.Map<String, Course> courseMap = new java.util.TreeMap<>(String.CASE_INSENSITIVE_ORDER);
-            courseRepository.findAll().forEach(c -> courseMap.put(c.getCourseName(), c));
+            courseRepository.findAll().forEach(c -> courseMap.put(c.getCourseName().trim(), c));
 
-            java.util.Map<String, Faculty> facultyMap = new java.util.TreeMap<>(String.CASE_INSENSITIVE_ORDER);
-            facultyRepository.findAll().forEach(f -> facultyMap.put(f.getFacultyName(), f));
+            java.util.List<Faculty> allFacultiesList = facultyRepository.findAll();
 
-            for (int i = 1; i <= sheet.getLastRowNum(); i++) {
-                Row row = sheet.getRow(i);
-                if (row == null) continue;
+            for (Row row : sheet) {
+                if (row.getRowNum() == 0) continue;
 
-                String departmentName = getCellValue(row.getCell(departmentIdx));
-                String courseName = getCellValue(row.getCell(courseNameIdx));
-                String facultyName = getCellValue(row.getCell(facultyNameIdx));
+                String departmentName = getCellValue(row.getCell(departmentIdx)).trim();
+                String courseName = getCellValue(row.getCell(courseNameIdx)).trim();
+                String facultyNamesRaw = getCellValue(row.getCell(facultyNameIdx)).trim();
 
-                if (departmentName.isEmpty() || courseName.isEmpty() || facultyName.isEmpty()) continue;
+                if (departmentName.isEmpty() || courseName.isEmpty() || facultyNamesRaw.isEmpty()) continue;
 
                 Department department = deptMap.get(departmentName);
                 if (department == null) {
@@ -221,34 +227,47 @@ public Response processBulkUpload(MultipartFile file) {
                     continue;
                 }
 
-                Faculty faculty = facultyMap.get(facultyName);
-                if (faculty == null) {
-                    missingFaculties.add(facultyName);
-                    continue;
-                }
-
-                // Check if faculty belongs to department, if not add it
-                if (faculty.getDepartments() == null) {
-                    faculty.setDepartments(new java.util.ArrayList<>(List.of(department)));
-                    facultyRepository.save(faculty);
-                } else if (faculty.getDepartments().stream().noneMatch(d -> d.getId().equals(department.getId()))) {
-                    faculty.getDepartments().add(department);
-                    facultyRepository.save(faculty);
-                }
-
-                boolean alreadyAssigned = assignmentRepository.existsByFacultyIdAndDepartmentIdAndCourseId(
-                        faculty.getId(), department.getId(), course.getId());
+                // Split by /, ,, &, or " and " to handle multiple faculty members in one cell
+                String[] facultyParts = facultyNamesRaw.split("[,/&]|(?i)\\s+and\\s+");
                 
-                if (!alreadyAssigned) {
-                    FacultyCourseAssignment assignment = FacultyCourseAssignment.builder()
-                            .faculty(faculty)
-                            .department(department)
-                            .course(course)
-                            .build();
-                    assignmentRepository.save(assignment);
-                    successCount++;
-                } else {
-                    alreadyAssignedCount++;
+                for (String fNameRaw : facultyParts) {
+                    fNameRaw = fNameRaw.trim();
+                    if (fNameRaw.isEmpty()) continue;
+                    
+                    Faculty faculty = findFacultyFuzzy(fNameRaw, allFacultiesList);
+                    if (faculty == null) {
+                        // Create faculty on the fly if not found to ensure assignment completes
+                        faculty = Faculty.builder()
+                                .facultyName(fNameRaw.trim())
+                                .departments(new java.util.ArrayList<>(java.util.List.of(department)))
+                                .build();
+                        faculty = facultyRepository.save(faculty);
+                        allFacultiesList.add(faculty); // Add to cache for subsequent rows
+                    }
+
+                    // Check if faculty belongs to department, if not add it
+                    if (faculty.getDepartments() == null) {
+                        faculty.setDepartments(new java.util.ArrayList<>(java.util.List.of(department)));
+                        facultyRepository.save(faculty);
+                    } else if (faculty.getDepartments().stream().noneMatch(d -> d.getId().equals(department.getId()))) {
+                        faculty.getDepartments().add(department);
+                        facultyRepository.save(faculty);
+                    }
+
+                    boolean alreadyAssigned = assignmentRepository.existsByFacultyIdAndDepartmentIdAndCourseId(
+                            faculty.getId(), department.getId(), course.getId());
+                    
+                    if (!alreadyAssigned) {
+                        FacultyCourseAssignment assignment = FacultyCourseAssignment.builder()
+                                .faculty(faculty)
+                                .department(department)
+                                .course(course)
+                                .build();
+                        assignmentRepository.save(assignment);
+                        successCount++;
+                    } else {
+                        alreadyAssignedCount++;
+                    }
                 }
             }
 
@@ -257,10 +276,9 @@ public Response processBulkUpload(MultipartFile file) {
                     .append(successCount).append(" created, ")
                     .append(alreadyAssignedCount).append(" already existed. ");
             
-            List<String> errors = new java.util.ArrayList<>();
+            java.util.List<String> errors = new java.util.ArrayList<>();
             if (!missingDepts.isEmpty()) errors.add("Departments not found: [" + String.join(", ", missingDepts) + "]");
             if (!missingCourses.isEmpty()) errors.add("Courses not found: [" + String.join(", ", missingCourses) + "]");
-            if (!missingFaculties.isEmpty()) errors.add("Faculty not found: [" + String.join(", ", missingFaculties) + "]");
             
             if (!errors.isEmpty()) {
                 finalMessage.append("Skipped entries because: ").append(String.join(". ", errors)).append(".");
@@ -278,8 +296,79 @@ public Response processBulkUpload(MultipartFile file) {
 
     private String getCellValue(Cell cell) {
         if (cell == null) return "";
-        if (cell.getCellType() == CellType.STRING) return cell.getStringCellValue().trim();
-        if (cell.getCellType() == CellType.NUMERIC) return String.valueOf((int) cell.getNumericCellValue());
-        return "";
+        switch (cell.getCellType()) {
+            case STRING:
+                return cell.getStringCellValue().trim();
+            case NUMERIC:
+                if (DateUtil.isCellDateFormatted(cell)) {
+                    return cell.getDateCellValue().toString();
+                }
+                return String.valueOf((long) cell.getNumericCellValue());
+            case BOOLEAN:
+                return String.valueOf(cell.getBooleanCellValue());
+            case FORMULA:
+                try {
+                    return cell.getStringCellValue().trim();
+                } catch (Exception e) {
+                    return String.valueOf(cell.getNumericCellValue());
+                }
+            case BLANK:
+                return "";
+            default:
+                return "";
+        }
+    }
+
+    private Faculty findFacultyFuzzy(String rawName, java.util.List<Faculty> allFaculties) {
+        String cleanName = cleanName(rawName);
+        if (cleanName.isEmpty()) return null;
+
+        // 1. Exact match after cleaning
+        for (Faculty f : allFaculties) {
+            if (cleanName(f.getFacultyName()).equals(cleanName)) {
+                return f;
+            }
+        }
+        
+        // 2. Contains match (DB name contains Excel name or vice versa)
+        for (Faculty f : allFaculties) {
+            String dbCleanName = cleanName(f.getFacultyName());
+            if (dbCleanName.isEmpty()) continue;
+            
+            if (dbCleanName.contains(cleanName) || cleanName.contains(dbCleanName)) {
+                return f;
+            }
+        }
+        
+        // 3. Match by first word (First name matching)
+        String[] excelParts = cleanName.split("\\s+");
+        if (excelParts.length > 0) {
+            for (Faculty f : allFaculties) {
+                String dbCleanName = cleanName(f.getFacultyName());
+                String[] dbParts = dbCleanName.split("\\s+");
+                if (dbParts.length > 0 && dbParts[0].equals(excelParts[0])) {
+                    return f;
+                }
+            }
+        }
+        
+        return null;
+    }
+
+    private String cleanName(String name) {
+        if (name == null) return "";
+        String cleaned = name.toLowerCase();
+        
+        // Remove text in brackets e.g. (CDC), (SoB)
+        cleaned = cleaned.replaceAll("\\(.*?\\)", "");
+        
+        // Remove punctuation/special characters
+        cleaned = cleaned.replaceAll("[^a-z\\s]", " ");
+        
+        // Remove common prefixes
+        cleaned = cleaned.replaceAll("\\b(prof|dr|mr|ms|mrs|er)\\b", "");
+        
+        // Normalize spaces
+        return cleaned.trim().replaceAll("\\s+", " ");
     }
 }
