@@ -60,7 +60,7 @@ public class UserServiceImpl implements UserService {
             throw new NotFoundException("Invalid Credentials");
         }
 
-        String token = jwtUtils.generateJwtToken(loginRequest.getEmail());
+        String token = jwtUtils.generateJwtToken(loginRequest.getEmail(), adminUser.getRole().name());
 
         UserDto adminUserDtos = modelMapper.map(adminUser, UserDto.class);
         return Response.builder()

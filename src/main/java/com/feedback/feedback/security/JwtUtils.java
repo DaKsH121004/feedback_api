@@ -30,9 +30,10 @@ public class JwtUtils {
         this.key = new SecretKeySpec(keyByte, "HmacSHA256");
     }
 
-    public String generateJwtToken(String email){
+    public String generateJwtToken(String email, String role){
         return Jwts.builder()
                 .subject(email)
+                .claim("role", role)
                 .issuedAt(new Date(System.currentTimeMillis()))
                 .expiration(new Date(System.currentTimeMillis() + EXPIRATION_TIME))
                 .signWith(key)
@@ -41,6 +42,10 @@ public class JwtUtils {
 
     public String getUsernameFromToken(String token){
         return extractClaims(token, Claims::getSubject);
+    }
+
+    public String getRoleFromToken(String token){
+        return (String) extractClaims(token, claims -> claims.get("role"));
     }
 
     private <T> T extractClaims(String token, Function<Claims, T> claimsFunction){
