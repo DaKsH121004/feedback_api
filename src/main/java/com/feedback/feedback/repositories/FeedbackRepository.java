@@ -10,7 +10,9 @@ public interface FeedbackRepository extends JpaRepository<Feedback, Long> {
     Boolean existsByStudentRollNoAndFacultyIdAndCourseId(String   studentRollNo, Long  facultyId, Long  courseId);
     
     @org.springframework.transaction.annotation.Transactional
-    void deleteByCourseId(Long courseId);
+    @org.springframework.data.jpa.repository.Modifying
+    @org.springframework.data.jpa.repository.Query("DELETE FROM Feedback f WHERE f.course.id = :courseId")
+    void deleteByCourseId(@org.springframework.data.repository.query.Param("courseId") Long courseId);
 
     @Query("SELECT AVG(f.averageRating) FROM Faculty f")
     Double findAverageRatingFromFaculty();

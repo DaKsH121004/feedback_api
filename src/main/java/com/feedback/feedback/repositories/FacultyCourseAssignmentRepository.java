@@ -11,5 +11,7 @@ public interface FacultyCourseAssignmentRepository extends JpaRepository<Faculty
     );
 
     @org.springframework.transaction.annotation.Transactional
-    void deleteByCourseId(Long courseId);
+    @org.springframework.data.jpa.repository.Modifying
+    @org.springframework.data.jpa.repository.Query("DELETE FROM FacultyCourseAssignment f WHERE f.course.id = :courseId")
+    void deleteByCourseId(@org.springframework.data.repository.query.Param("courseId") Long courseId);
 }
