@@ -136,14 +136,16 @@ public class FeedbackServiceImpl implements FeedbackService {
         }
 
         boolean validAssignment = assignmentRepository
-                .existsByFacultyIdAndDepartmentIdAndCourseId(
+                .existsByFacultyIdAndDepartmentIdAndCourseIdAndSemesterAndClassSection(
                         faculty.getId(),
                         department.getId(),
-                        course.getId()
+                        course.getId(),
+                        feedbackRequest.getSemester(),
+                        feedbackRequest.getClassSection()
                 );
 
         if (!validAssignment) {
-            throw new RuntimeException("Invalid selection: Faculty does not teach this course in this department");
+            throw new RuntimeException("Invalid selection: Faculty does not teach this course for your semester/section");
         }
 
 //        boolean alreadySubmitted = feedbackRepository

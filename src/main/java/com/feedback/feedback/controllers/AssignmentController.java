@@ -44,4 +44,12 @@ public class AssignmentController {
     public Response bulkUpload(@RequestParam("file") MultipartFile file) {
         return assignmentService.processBulkUpload(file);
     }
+
+    @GetMapping("/assigned-courses")
+    public Response getAssignedCourses(@RequestParam Long facultyId,
+                                     @RequestParam Long departmentId,
+                                     @RequestParam Integer semester,
+                                     @RequestParam String section) {
+        return assignmentService.getAssignedCourses(facultyId, departmentId, semester, section);
+    }
 }

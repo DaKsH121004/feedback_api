@@ -13,4 +13,6 @@ public class AssignmentRequest {
     private Long facultyId;
     private Long departmentId;
     private Long courseId;
+    private Integer semester;
+    private String classSection;
 }

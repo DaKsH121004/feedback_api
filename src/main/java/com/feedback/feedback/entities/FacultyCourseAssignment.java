@@ -9,7 +9,7 @@ import lombok.NoArgsConstructor;
 @Entity
 @Table(name = "faculty_course_assignments",
         uniqueConstraints = @UniqueConstraint(
-                columnNames = {"faculty_id", "department_id", "course_id"}
+                columnNames = {"faculty_id", "department_id", "course_id", "semester", "classSection"}
         )
 )
 @Data
@@ -33,4 +33,7 @@ public class FacultyCourseAssignment {
     @ManyToOne
     @JoinColumn(name = "course_id")
     private Course course;
+
+    private Integer semester;
+    private String classSection;
 }

@@ -45,4 +45,9 @@ public class FacultyController {
     public ResponseEntity<Response> deleteFacultyById(@PathVariable Long id) {
         return new ResponseEntity<>(facultyService.deleteFacultyById(id), HttpStatus.OK);
     }
+
+    @GetMapping("/department/{departmentId}")
+    public ResponseEntity<Response> getFacultyByDepartment(@PathVariable Long departmentId) {
+        return new ResponseEntity<>(facultyService.getFacultyByDepartment(departmentId), HttpStatus.OK);
+    }
 }

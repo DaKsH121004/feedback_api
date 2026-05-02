@@ -2,6 +2,7 @@ package com.feedback.feedback.services.impl;
 
 import com.feedback.feedback.dto.AssignmentDto;
 import com.feedback.feedback.dto.AssignmentRequest;
+import com.feedback.feedback.dto.CourseDto;
 import com.feedback.feedback.dto.Response;
 import com.feedback.feedback.entities.Course;
 import com.feedback.feedback.entities.Department;
@@ -74,6 +75,8 @@ public class FacultyCourseAssignmentServiceImpl implements FacultyCourseAssignme
                 .faculty(faculty)
                 .department(department)
                 .course(course)
+                .semester(request.getSemester())
+                .classSection(request.getClassSection())
                 .build();
 
         assignmentRepository.save(assignment);
@@ -116,6 +119,8 @@ public class FacultyCourseAssignmentServiceImpl implements FacultyCourseAssignme
         assignment.setFaculty(faculty);
         assignment.setDepartment(department);
         assignment.setCourse(course);
+        assignment.setSemester(request.getSemester());
+        assignment.setClassSection(request.getClassSection());
 
         assignmentRepository.save(assignment);
 
@@ -154,6 +159,8 @@ public class FacultyCourseAssignmentServiceImpl implements FacultyCourseAssignme
                         .departmentName(a.getDepartment().getDepartmentName())
                         .courseId(a.getCourse().getId())
                         .courseName(a.getCourse().getCourseName())
+                        .semester(a.getSemester())
+                        .classSection(a.getClassSection())
                         .build()
         ).toList();
 
@@ -177,6 +184,8 @@ public class FacultyCourseAssignmentServiceImpl implements FacultyCourseAssignme
             int departmentIdx = -1;
             int courseNameIdx = -1;
             int facultyNameIdx = -1;
+            int semesterIdx = -1;
+            int sectionIdx = -1;
 
             for (Cell cell : headerRow) {
                 if (cell.getCellType() == CellType.STRING) {
@@ -184,6 +193,8 @@ public class FacultyCourseAssignmentServiceImpl implements FacultyCourseAssignme
                     if (header.contains("department") || header.equals("dept")) departmentIdx = cell.getColumnIndex();
                     if (header.contains("course")) courseNameIdx = cell.getColumnIndex();
                     if (header.contains("faculty")) facultyNameIdx = cell.getColumnIndex();
+                    if (header.contains("semester") || header.equals("sem")) semesterIdx = cell.getColumnIndex();
+                    if (header.contains("section") || header.equals("class")) sectionIdx = cell.getColumnIndex();
                 }
             }
 
@@ -249,14 +260,29 @@ public class FacultyCourseAssignmentServiceImpl implements FacultyCourseAssignme
                         facultyRepository.save(faculty);
                     }
 
-                    boolean alreadyAssigned = assignmentRepository.existsByFacultyIdAndDepartmentIdAndCourseId(
-                            faculty.getId(), department.getId(), course.getId());
+                    Integer semesterVal = null;
+                    if (semesterIdx != -1) {
+                        try {
+                            String s = getCellValue(row.getCell(semesterIdx));
+                            if (!s.isEmpty()) semesterVal = Integer.parseInt(s.replaceAll("[^0-9]", ""));
+                        } catch (Exception ignored) {}
+                    }
+                    
+                    String sectionVal = "";
+                    if (sectionIdx != -1) {
+                        sectionVal = getCellValue(row.getCell(sectionIdx)).trim();
+                    }
+
+                    boolean alreadyAssigned = assignmentRepository.existsByFacultyIdAndDepartmentIdAndCourseIdAndSemesterAndClassSection(
+                            faculty.getId(), department.getId(), course.getId(), semesterVal, sectionVal);
                     
                     if (!alreadyAssigned) {
                         FacultyCourseAssignment assignment = FacultyCourseAssignment.builder()
                                 .faculty(faculty)
                                 .department(department)
                                 .course(course)
+                                .semester(semesterVal)
+                                .classSection(sectionVal)
                                 .build();
                         assignmentRepository.save(assignment);
                         successCount++;

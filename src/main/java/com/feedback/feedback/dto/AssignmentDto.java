@@ -19,4 +19,7 @@ public class AssignmentDto {
 
     private Long courseId;
     private String courseName;
+
+    private Integer semester;
+    private String classSection;
 }

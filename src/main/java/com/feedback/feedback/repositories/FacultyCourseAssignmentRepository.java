@@ -4,10 +4,19 @@ import com.feedback.feedback.entities.FacultyCourseAssignment;
 import org.springframework.data.jpa.repository.JpaRepository;
 
 public interface FacultyCourseAssignmentRepository extends JpaRepository<FacultyCourseAssignment, Long> {
-    boolean existsByFacultyIdAndDepartmentIdAndCourseId(
+    boolean existsByFacultyIdAndDepartmentIdAndCourseIdAndSemesterAndClassSection(
             Long facultyId,
             Long departmentId,
-            Long courseId
+            Long courseId,
+            Integer semester,
+            String classSection
+    );
+
+    java.util.List<FacultyCourseAssignment> findByFacultyIdAndDepartmentIdAndSemesterAndClassSection(
+            Long facultyId,
+            Long departmentId,
+            Integer semester,
+            String classSection
     );
 
     @org.springframework.transaction.annotation.Transactional

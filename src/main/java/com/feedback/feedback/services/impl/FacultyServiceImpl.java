@@ -144,4 +144,22 @@ public class FacultyServiceImpl implements FacultyService {
                 .build();
     }
 
+    @Override
+    public Response getFacultyByDepartment(Long departmentId) {
+        List<Faculty> faculties = facultyRepository.findByDepartmentsId(departmentId);
+        
+        List<FacultyDto> facultyDtos = faculties.stream().map(f -> 
+            FacultyDto.builder()
+                .id(f.getId())
+                .facultyName(f.getFacultyName())
+                .build()
+        ).toList();
+
+        return Response.builder()
+                .status(200)
+                .message("Faculty fetched successfully")
+                .faculties(facultyDtos)
+                .build();
+    }
+
 }

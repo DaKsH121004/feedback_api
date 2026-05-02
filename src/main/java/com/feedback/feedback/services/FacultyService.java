@@ -9,4 +9,5 @@ public interface FacultyService {
     Response getFacultyById(Long id);
     Response updateFacultyById(Long id, FacultyRequest facultyRequest);
     Response deleteFacultyById(Long id);
+    Response getFacultyByDepartment(Long departmentId);
 }

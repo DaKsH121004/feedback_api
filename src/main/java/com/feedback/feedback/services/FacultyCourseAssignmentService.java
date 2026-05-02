@@ -9,4 +9,5 @@ public interface FacultyCourseAssignmentService {
     Response deleteAssignment(Long id);
     Response getAllAssignments();
     Response processBulkUpload(org.springframework.web.multipart.MultipartFile file);
+    Response getAssignedCourses(Long facultyId, Long departmentId, Integer semester, String section);
 }
