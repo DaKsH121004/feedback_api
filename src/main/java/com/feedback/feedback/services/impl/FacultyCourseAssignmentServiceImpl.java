@@ -60,10 +60,12 @@ public class FacultyCourseAssignmentServiceImpl implements FacultyCourseAssignme
         }
 
         boolean alreadyAssigned = assignmentRepository
-                .existsByFacultyIdAndDepartmentIdAndCourseId(
+                .existsByFacultyIdAndDepartmentIdAndCourseIdAndSemesterAndClassSection(
                         request.getFacultyId(),
                         request.getDepartmentId(),
-                        request.getCourseId()
+                        request.getCourseId(),
+                        request.getSemester(),
+                        request.getClassSection()
                 );
 
         if (alreadyAssigned) {
@@ -94,10 +96,12 @@ public class FacultyCourseAssignmentServiceImpl implements FacultyCourseAssignme
                 .orElseThrow(() -> new NotFoundException("Assignment not found"));
 
         boolean alreadyAssigned = assignmentRepository
-                .existsByFacultyIdAndDepartmentIdAndCourseId(
+                .existsByFacultyIdAndDepartmentIdAndCourseIdAndSemesterAndClassSection(
                         request.getFacultyId(),
                         request.getDepartmentId(),
-                        request.getCourseId()
+                        request.getCourseId(),
+                        request.getSemester(),
+                        request.getClassSection()
                 );
 
         if (alreadyAssigned) {
@@ -168,6 +172,27 @@ public class FacultyCourseAssignmentServiceImpl implements FacultyCourseAssignme
                 .status(200)
                 .message("Assignments fetched successfully")
                 .assignments(dtoList)
+                .build();
+    }
+
+    @Override
+    public Response getAssignedCourses(Long facultyId, Long departmentId, Integer semester, String section) {
+        List<FacultyCourseAssignment> assignments = assignmentRepository.findByFacultyIdAndDepartmentIdAndSemesterAndClassSection(
+                facultyId, departmentId, semester, section
+        );
+
+        List<CourseDto> courseDtos = assignments.stream()
+                .map(a -> CourseDto.builder()
+                        .id(a.getCourse().getId())
+                        .courseName(a.getCourse().getCourseName())
+                        .build())
+                .distinct()
+                .toList();
+
+        return Response.builder()
+                .status(200)
+                .message("Courses fetched successfully")
+                .courses(courseDtos)
                 .build();
     }
 
