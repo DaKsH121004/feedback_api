@@ -41,35 +41,24 @@ public class AuthFilter extends OncePerRequestFilter {
 
                 if (StringUtils.hasText(email) && SecurityContextHolder.getContext().getAuthentication() == null) {
 
-                    List<SimpleGrantedAuthority> authorities;
-
                     if (StringUtils.hasText(role)) {
-                        // New token: role is embedded in JWT, no DB call needed
-                        authorities = List.of(new SimpleGrantedAuthority(role));
+                        // Role is embedded in JWT, authenticate without DB call
+                        List<SimpleGrantedAuthority> authorities = List.of(new SimpleGrantedAuthority(role));
+                        UsernamePasswordAuthenticationToken authentication =
+                                new UsernamePasswordAuthenticationToken(
+                                        email,
+                                        null,
+                                        authorities
+                                );
+
+                        authentication.setDetails(
+                                new WebAuthenticationDetailsSource().buildDetails(request)
+                        );
+
+                        SecurityContextHolder.getContext().setAuthentication(authentication);
                     } else {
-                        // Old token (no role claim): fall back to DB lookup
-                        UserDetails userDetails = customUserDetailsService.loadUserByUsername(email);
-                        if (!jwtUtils.isTokenValid(token, userDetails)) {
-                            filterChain.doFilter(request, response);
-                            return;
-                        }
-                        authorities = userDetails.getAuthorities().stream()
-                                .map(a -> new SimpleGrantedAuthority(a.getAuthority()))
-                                .toList();
+                        log.warn("Token for user {} is missing role claim. Forcing re-login.", email);
                     }
-
-                    UsernamePasswordAuthenticationToken authentication =
-                            new UsernamePasswordAuthenticationToken(
-                                    email,
-                                    null,
-                                    authorities
-                            );
-
-                    authentication.setDetails(
-                            new WebAuthenticationDetailsSource().buildDetails(request)
-                    );
-
-                    SecurityContextHolder.getContext().setAuthentication(authentication);
                 }
             }
 
