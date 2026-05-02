@@ -41,7 +41,23 @@ public class AuthFilter extends OncePerRequestFilter {
 
                 if (StringUtils.hasText(email) && SecurityContextHolder.getContext().getAuthentication() == null) {
 
-                    List<SimpleGrantedAuthority> authorities = List.of(new SimpleGrantedAuthority(role));
+                    List<SimpleGrantedAuthority> authorities;
+
+                    if (StringUtils.hasText(role)) {
+                        // New token: role is embedded in JWT, no DB call needed
+                        authorities = List.of(new SimpleGrantedAuthority(role));
+                    } else {
+                        // Old token (no role claim): fall back to DB lookup
+                        UserDetails userDetails = customUserDetailsService.loadUserByUsername(email);
+                        if (!jwtUtils.isTokenValid(token, userDetails)) {
+                            filterChain.doFilter(request, response);
+                            return;
+                        }
+                        authorities = userDetails.getAuthorities().stream()
+                                .map(a -> new SimpleGrantedAuthority(a.getAuthority()))
+                                .toList();
+                    }
+
                     UsernamePasswordAuthenticationToken authentication =
                             new UsernamePasswordAuthenticationToken(
                                     email,
