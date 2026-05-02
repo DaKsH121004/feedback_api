@@ -19,6 +19,9 @@ public interface FacultyCourseAssignmentRepository extends JpaRepository<Faculty
             String classSection
     );
 
+    @org.springframework.data.jpa.repository.Query("SELECT f FROM FacultyCourseAssignment f WHERE f.faculty.id = :facultyId AND f.department.id = :departmentId AND (f.semester IS NULL OR f.classSection IS NULL OR f.classSection = '')")
+    java.util.List<FacultyCourseAssignment> findByFacultyIdAndDepartmentIdAndSemesterIsNull(@org.springframework.data.repository.query.Param("facultyId") Long facultyId, @org.springframework.data.repository.query.Param("departmentId") Long departmentId);
+
     @org.springframework.transaction.annotation.Transactional
     @org.springframework.data.jpa.repository.Modifying
     @org.springframework.data.jpa.repository.Query("DELETE FROM FacultyCourseAssignment f WHERE f.course.id = :courseId")
