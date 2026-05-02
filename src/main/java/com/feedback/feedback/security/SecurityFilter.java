@@ -37,6 +37,7 @@ public class SecurityFilter {
         ).authorizeHttpRequests(
                 request -> request
                         .requestMatchers("/api/v1/auth/**").permitAll()
+                        .requestMatchers(org.springframework.http.HttpMethod.OPTIONS, "/**").permitAll()
                         .requestMatchers(org.springframework.http.HttpMethod.GET, "/api/v1/school/**","/api/v1/department/**","/api/v1/course/**","/api/v1/faculty/**","/api/v1/feedback/**", "/api/v1/form/**").permitAll()
                         .requestMatchers("/api/v1/feedback/add").permitAll()
                         .anyRequest().authenticated()
