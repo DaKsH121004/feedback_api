@@ -177,9 +177,20 @@ public class FacultyCourseAssignmentServiceImpl implements FacultyCourseAssignme
 
     @Override
     public Response getAssignedCourses(Long facultyId, Long departmentId, Integer semester, String section) {
+        // Try strict match first
         List<FacultyCourseAssignment> assignments = assignmentRepository.findByFacultyIdAndDepartmentIdAndSemesterAndClassSection(
                 facultyId, departmentId, semester, section
         );
+
+        // Fallback: If no strict match, find assignments where semester/section are not yet assigned (null/empty)
+        if (assignments.isEmpty()) {
+            List<FacultyCourseAssignment> allFacultyAssignments = assignmentRepository.findAll().stream()
+                    .filter(a -> a.getFaculty().getId().equals(facultyId))
+                    .filter(a -> a.getDepartment().getId().equals(departmentId))
+                    .filter(a -> a.getSemester() == null || a.getClassSection() == null || a.getClassSection().isEmpty())
+                    .toList();
+            assignments = allFacultyAssignments;
+        }
 
         List<CourseDto> courseDtos = assignments.stream()
                 .map(a -> CourseDto.builder()
