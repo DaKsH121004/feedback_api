@@ -40,6 +40,7 @@ public class SecurityFilter {
                         .requestMatchers(org.springframework.http.HttpMethod.OPTIONS, "/**").permitAll()
                         .requestMatchers(org.springframework.http.HttpMethod.GET, "/api/v1/school/**","/api/v1/department/**","/api/v1/course/**","/api/v1/faculty/**","/api/v1/feedback/**", "/api/v1/form/**").permitAll()
                         .requestMatchers("/api/v1/feedback/add").permitAll()
+                        .requestMatchers("/error").permitAll()
                         .anyRequest().authenticated()
         ).sessionManagement(manager -> manager.sessionCreationPolicy(SessionCreationPolicy.STATELESS)).addFilterBefore(authFilter, UsernamePasswordAuthenticationFilter.class);
         return http.build();
