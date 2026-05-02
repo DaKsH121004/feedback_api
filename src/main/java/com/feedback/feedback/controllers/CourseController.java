@@ -49,13 +49,13 @@ public class CourseController {
     }
 
     @DeleteMapping("/{id}")
-    @PreAuthorize("hasAuthority('SUPERADMIN')")
+    @PreAuthorize("hasAnyAuthority('SUPERADMIN', 'ADMIN')")
     public ResponseEntity<Response> deleteCourse(@PathVariable Long id) {
         return new ResponseEntity<>(courseService.deleteCourse(id), HttpStatus.OK);
     }
 
     @DeleteMapping("/all")
-    @PreAuthorize("hasAuthority('SUPERADMIN')")
+    @PreAuthorize("hasAnyAuthority('SUPERADMIN', 'ADMIN')")
     public ResponseEntity<Response> deleteAllCourses() {
         return new ResponseEntity<>(courseService.deleteAllCourses(), HttpStatus.OK);
     }
