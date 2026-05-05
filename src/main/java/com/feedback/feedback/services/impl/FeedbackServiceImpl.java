@@ -202,10 +202,29 @@ public class FeedbackServiceImpl implements FeedbackService {
     @Override
     public Response getAllFeedback() {
         List<Feedback> feedbacks = feedbackRepository.findAll();
-        List<FeedbackDto> feedbackDtos = modelMapper.map(feedbacks, new TypeToken<List<FeedbackDto>>() {}.getType());
+        
+        List<FeedbackDto> feedbackDtos = feedbacks.stream().map(f -> 
+            FeedbackDto.builder()
+                .id(f.getId())
+                .school(f.getSchool())
+                .department(f.getDepartment())
+                .semester(f.getSemester())
+                .classSection(f.getClassSection())
+                .faculty(f.getFaculty())
+                .course(f.getCourse())
+                .q1(f.getQ1())
+                .q2(f.getQ2())
+                .q3(f.getQ3())
+                .q4(f.getQ4())
+                .q5(f.getQ5())
+                .remarks(f.getRemarks())
+                .createdAt(f.getCreatedAt())
+                .build()
+        ).toList();
+
         return Response.builder()
                 .status(200)
-                .message("Successfully submitted feedback")
+                .message("Successfully fetched feedback")
                 .feedbacks(feedbackDtos)
                 .build();
     }
