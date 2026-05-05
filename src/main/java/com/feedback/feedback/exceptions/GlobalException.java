@@ -32,4 +32,35 @@ public class GlobalException extends ResponseEntityExceptionHandler {
         );
         return new ResponseEntity<>(errorDetails, HttpStatus.BAD_REQUEST);
     }
+
+    @Override
+    protected ResponseEntity<Object> handleMethodArgumentNotValid(org.springframework.web.bind.MethodArgumentNotValidException ex, org.springframework.http.HttpHeaders headers, org.springframework.http.HttpStatusCode status, WebRequest request) {
+
+        StringBuilder message = new StringBuilder();
+        ex.getBindingResult().getAllErrors().forEach((error) -> {
+            String fieldName = ((org.springframework.validation.FieldError) error).getField();
+            String errorMessage = error.getDefaultMessage();
+            message.append(fieldName).append(": ").append(errorMessage).append("; ");
+        });
+        
+        ErrorDetails errorDetails = new ErrorDetails(
+                LocalDateTime.now(),
+                message.toString(),
+                request.getDescription(false),
+                "VALIDATION_FAILED"
+        );
+        return new ResponseEntity<>(errorDetails, HttpStatus.BAD_REQUEST);
+    }
+
+    @ExceptionHandler(Exception.class)
+    public ResponseEntity<ErrorDetails> handleGlobalException(Exception ex, WebRequest request) {
+        ErrorDetails errorDetails = new ErrorDetails(
+                LocalDateTime.now(),
+                ex.getMessage(),
+                request.getDescription(false),
+                "INTERNAL_SERVER_ERROR"
+        );
+        return new ResponseEntity<>(errorDetails, HttpStatus.INTERNAL_SERVER_ERROR);
+    }
+
 }

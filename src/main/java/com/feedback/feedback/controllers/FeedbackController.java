@@ -5,6 +5,7 @@ import com.feedback.feedback.dto.Response;
 import com.feedback.feedback.services.AppConfigService;
 import com.feedback.feedback.services.FeedbackService;
 import lombok.RequiredArgsConstructor;
+import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -25,7 +26,8 @@ public class FeedbackController {
     }
 
     @PostMapping("/add")
-    public ResponseEntity<Response> addFeedback(@RequestBody FeedbackRequest feedbackRequest){
+    public ResponseEntity<Response> addFeedback(@Valid @RequestBody FeedbackRequest feedbackRequest){
+
         if (!appConfigService.isFormActive()) {
             return ResponseEntity.status(403)
                     .body(Response.builder()

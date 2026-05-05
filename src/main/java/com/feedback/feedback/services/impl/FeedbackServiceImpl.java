@@ -160,9 +160,9 @@ public class FeedbackServiceImpl implements FeedbackService {
 //        }
 
         Feedback feedback = Feedback.builder()
-//                .studentName(feedbackRequest.getStudentName())
-//                .studentEmail(feedbackRequest.getStudentEmail())
-//                .studentRollNo(feedbackRequest.getStudentRollNo())
+                .studentName(feedbackRequest.getStudentName())
+                .studentEmail(feedbackRequest.getStudentEmail())
+                .studentRollNo(feedbackRequest.getStudentRollNo())
                 .school(school)
                 .department(department)
                 .semester(feedbackRequest.getSemester())
