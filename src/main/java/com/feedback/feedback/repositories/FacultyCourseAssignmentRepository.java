@@ -12,6 +12,9 @@ public interface FacultyCourseAssignmentRepository extends JpaRepository<Faculty
             String classSection
     );
 
+    @org.springframework.data.jpa.repository.Query("SELECT COUNT(f) > 0 FROM FacultyCourseAssignment f WHERE f.faculty.id = :facultyId AND f.department.id = :departmentId AND f.course.id = :courseId AND (f.semester IS NULL OR f.classSection IS NULL OR f.classSection = '')")
+    boolean existsByFacultyIdAndDepartmentIdAndCourseIdAndSemesterIsNull(@org.springframework.data.repository.query.Param("facultyId") Long facultyId, @org.springframework.data.repository.query.Param("departmentId") Long departmentId, @org.springframework.data.repository.query.Param("courseId") Long courseId);
+
     java.util.List<FacultyCourseAssignment> findByFacultyIdAndDepartmentIdAndSemesterAndClassSection(
             Long facultyId,
             Long departmentId,

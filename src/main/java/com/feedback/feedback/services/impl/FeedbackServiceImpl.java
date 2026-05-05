@@ -144,9 +144,19 @@ public class FeedbackServiceImpl implements FeedbackService {
                         feedbackRequest.getClassSection()
                 );
 
+        // Fallback: If no strict match, check if assignment exists without semester/section (null in DB)
+        if (!validAssignment) {
+            validAssignment = assignmentRepository.existsByFacultyIdAndDepartmentIdAndCourseIdAndSemesterIsNull(
+                    faculty.getId(),
+                    department.getId(),
+                    course.getId()
+            );
+        }
+
         if (!validAssignment) {
             throw new RuntimeException("Invalid selection: Faculty does not teach this course for your semester/section");
         }
+
 
 //        boolean alreadySubmitted = feedbackRepository
 //                .existsByStudentRollNoAndFacultyIdAndCourseId(
